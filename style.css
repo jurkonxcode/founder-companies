@@ -1835,3 +1835,142 @@ table td.good { color: var(--good); }
   .portfolio-progression { font-size: 10.5px; padding: 6px 10px; gap: 6px; }
   .pp-label { font-size: 9.5px; }
 }
+/* =========================================================
+   PUBLIC RATING SYSTEM
+   ========================================================= */
+
+/* Avg rating chip next to section title */
+.avg-rating-chip {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  background: var(--bg-3);
+  color: var(--fg-2);
+  border-radius: 999px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* Rating preview (before launch) */
+.rating-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-top: 10px;
+}
+.rating-tier {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+.rating-body { flex: 1; min-width: 0; }
+.rating-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 2px;
+  flex-wrap: wrap;
+}
+.rating-score {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--fg-0);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.rating-denom {
+  font-size: 11px;
+  color: var(--fg-3);
+  font-weight: 500;
+  margin-left: 1px;
+}
+.rating-verdict {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.rating-note {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  letter-spacing: 0.02em;
+}
+
+/* Portfolio card — tier badge top-right */
+.portfolio-card { position: relative; }
+.portfolio-tier {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-family: var(--font-serif);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  padding: 2px 8px;
+  border-radius: 5px;
+  z-index: 2;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* Portfolio card — rating line */
+.portfolio-rating {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  margin: 6px 0 4px;
+  padding: 4px 6px;
+  background: var(--bg-2);
+  border-radius: 6px;
+}
+.pr-score {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.pr-verdict {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: var(--fg-3);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 68px;
+}
+
+/* Slightly taller card to fit rating */
+.portfolio-card {
+  width: 126px;
+}
+
+@media (max-width: 900px) {
+  .portfolio-card { width: 114px; }
+  .portfolio-tier { font-size: 11px; padding: 2px 6px; }
+  .pr-score { font-size: 13px; }
+  .pr-verdict { font-size: 8px; max-width: 60px; }
+  .rating-tier { width: 36px; height: 36px; font-size: 18px; border-radius: 10px; }
+  .rating-score { font-size: 17px; }
+}
