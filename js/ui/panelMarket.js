@@ -1,2 +1,4 @@
 // Market panel UI module
-export const panelMarket = {};
+export const panelMarket = {
+  render: () => 'Market panel loaded',
+};

@@ -1,2 +1,5 @@
 // ISA (Instruction Set Architecture) data module
-export const isaData = {};
+export const isaData = {
+  title: 'Instruction Set Architecture',
+  architectures: [],
+};

@@ -1,2 +1,4 @@
 // Team panel UI module
-export const panelTeam = {};
+export const panelTeam = {
+  render: () => 'Team panel loaded',
+};
