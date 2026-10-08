@@ -1,5 +1,6 @@
+
 // js/main.js
-// Entry point: menu init, game boot, turn loop, speed control, event handling.
+// Entry point: menu init, game boot, turn loop, speed control.
 
 // =========================================================
 // SPEED CONTROL
@@ -26,8 +27,6 @@ function setSpeed(rate) {
       nextTurn(true);
     }, interval);
   }
-
-  if (typeof saveGame === 'function') saveGame(true);
 }
 
 function togglePause() {
@@ -59,7 +58,7 @@ function updateNavBadges() {
   const canResearch = canResearchNext(state).ok;
   setNavBadge('research', canResearch);
   const candidates = state.pool.length;
-  setNavBadge('team', state.team.length === 0 && candidates > 0);
+  setNavBadge('team', state.team.filter(e => !e.isFounder).length === 0 && candidates > 0);
 }
 
 // =========================================================
@@ -92,7 +91,7 @@ function nextTurn(fromAuto = false) {
   let rdSpend = 0;
   const activeProjects = state.projects.filter(p => p.status === 'active');
   for (const p of activeProjects) {
-    const assigned = state.team.filter(e => p.engineerIds.includes(e.id));
+    const assigned = state.team.filter(e => p.engineerIds && p.engineerIds.includes(e.id));
     const result = advanceProject(p, assigned);
     rdSpend += result.cost;
 
@@ -182,7 +181,7 @@ function nextTurn(fromAuto = false) {
     toast(`${eng.name} resigned!`, 'bad');
     state.team = state.team.filter(e => e.id !== eng.id);
     for (const p of state.projects) {
-      p.engineerIds = p.engineerIds.filter(id => id !== eng.id);
+      if (p.engineerIds) p.engineerIds = p.engineerIds.filter(id => id !== eng.id);
     }
   }
 
@@ -200,14 +199,34 @@ function nextTurn(fromAuto = false) {
     return;
   }
 
-  // 15. History
-  if (!state.history) state.history = { cash: [], share: [], revenue: [] };
+  // =========================================================
+  // 15. History — cash, share, revenue, revPerTurn, profit
+  // =========================================================
+  if (!state.history) {
+    state.history = { cash: [], share: [], revenue: [], revPerTurn: [], profit: [] };
+  }
+  if (!state.history.revPerTurn) state.history.revPerTurn = [];
+  if (!state.history.profit) state.history.profit = [];
+
   state.history.cash.push(Math.round(state.uang));
   state.history.share.push(parseFloat(state.marketShare.toFixed(4)));
   state.history.revenue.push(Math.round(state.totalRevenue));
-  if (state.history.cash.length > 24) state.history.cash.shift();
-  if (state.history.share.length > 24) state.history.share.shift();
-  if (state.history.revenue.length > 24) state.history.revenue.shift();
+
+  // Revenue this turn = delta of totalRevenue
+  const revThisTurn = Math.max(0, state.totalRevenue - (state._lastTotalRevenue || 0));
+  state._lastTotalRevenue = state.totalRevenue;
+
+  // Operating cost this turn (for profit calculation)
+  const opCostNow = calcOperatingCost(state);
+  const profitThisTurn = revThisTurn - opCostNow.total;
+
+  state.history.revPerTurn.push(Math.round(revThisTurn));
+  state.history.profit.push(Math.round(profitThisTurn));
+
+  // Trim all history arrays to 24 turns
+  ['cash', 'share', 'revenue', 'revPerTurn', 'profit'].forEach(k => {
+    if (state.history[k] && state.history[k].length > 24) state.history[k].shift();
+  });
 
   // 16. Turn summary
   const net = passive - salary - rdSpend;
@@ -229,12 +248,15 @@ function handleRandomEvent(ev) {
   addLog(`${ev.title} — ${ev.desc}`, logType);
   toast(ev.desc, logType, ev.title);
 
-  const diff = (typeof getActiveDifficulty === 'function' && state) ? getActiveDifficulty(state) : { playerPenaltyMult: 1 };
+  const diff = (typeof getActiveDifficulty === 'function' && state)
+    ? getActiveDifficulty(state)
+    : { playerPenaltyMult: 1 };
 
   switch (ev.effect) {
     case 'poach': {
-      if (state.team.length === 0) break;
-      const victim = state.team[Math.floor(Math.random() * state.team.length)];
+      const hired = state.team.filter(e => !e.isFounder);
+      if (hired.length === 0) break;
+      const victim = hired[Math.floor(Math.random() * hired.length)];
       victim.loyalty = Math.max(0, victim.loyalty - 20);
       break;
     }
@@ -277,12 +299,10 @@ function bindGlobalActions() {
 }
 
 function bindNav() {
-  // Panels with data-panel
   document.querySelectorAll('.nav-btn[data-panel]').forEach(btn => {
     btn.addEventListener('click', () => renderPanel(btn.dataset.panel));
   });
 
-  // Create button — opens designer modal
   const createBtn = document.getElementById('nav-create');
   if (createBtn) {
     createBtn.addEventListener('click', () => {
