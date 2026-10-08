@@ -1,25 +1,28 @@
 // js/ui/notifications.js
-// Notification bell + drawer for real-world tech headlines.
+// Notification bell + drawer. Month-aware headlines with categories.
 
-const MAX_NOTIFICATIONS = 30;
+const MAX_NOTIFICATIONS = 60;
 
 // =========================================================
-// PUBLIC — called on new year
+// PUBLIC — called every turn (from main.js)
 // =========================================================
-function checkYearHeadline(year) {
-  const headlines = getHeadlinesForYear(year);
+function checkMonthHeadlines(year, month) {
+  const headlines = getHeadlinesForMonth(year, month);
   if (headlines.length === 0) return;
 
   if (!state.notifications) state.notifications = [];
   const existingIds = new Set(state.notifications.map(n => n.id));
+  let newCount = 0;
 
   headlines.forEach((h, i) => {
-    const id = `${year}_${i}`;
+    const id = `${h.y}_${h.m}_${h.cat}_${i}`;
     if (existingIds.has(id)) return;
 
     const notif = {
       id,
-      year,
+      year: h.y,
+      month: h.m,
+      cat: h.cat,
       title: h.title,
       desc: h.desc,
       turn: state.turn,
@@ -27,20 +30,27 @@ function checkYearHeadline(year) {
       timestamp: Date.now(),
     };
     state.notifications.unshift(notif);
+    newCount++;
 
-    // Toast the first one only (avoid spam)
+    // Toast the first headline only (avoid spam)
     if (i === 0) {
-      toast(h.desc, 'info', `📰 ${year} · ${h.title}`);
+      const catLabel = (HEADLINE_CATEGORIES[h.cat] || {}).label || '';
+      toast(h.desc, 'info', `📰 ${h.y} · ${h.title}`);
     }
-    addLog(`[${year}] ${h.title} — ${h.desc}`, 'milestone');
+    addLog(`[${h.y}] ${h.title} — ${h.desc}`, 'milestone');
   });
 
-  // Trim
+  // Trim oldest
   if (state.notifications.length > MAX_NOTIFICATIONS) {
     state.notifications.length = MAX_NOTIFICATIONS;
   }
 
-  updateBellBadge();
+  if (newCount > 0) updateBellBadge();
+}
+
+// Keep the old name as alias for backward compatibility
+function checkYearHeadline(year) {
+  for (let m = 1; m <= 12; m++) checkMonthHeadlines(year, m);
 }
 
 // =========================================================
@@ -70,7 +80,6 @@ function openNotifDrawer() {
   drawer.classList.add('open');
   backdrop?.classList.add('open');
 
-  // Mark all as read (after a short delay so user sees the badge clear)
   setTimeout(() => {
     (state.notifications || []).forEach(n => n.read = true);
     updateBellBadge();
@@ -93,7 +102,7 @@ function renderNotifDrawer() {
       <div class="notif-empty">
         <div class="notif-empty-icon">📰</div>
         <div class="notif-empty-title">No news yet</div>
-        <div class="notif-empty-desc">Headlines from real world history appear as you pass each year.</div>
+        <div class="notif-empty-desc">Headlines from real-world history appear as you pass through the years.</div>
       </div>
     `;
     return;
@@ -107,21 +116,33 @@ function renderNotifDrawer() {
   });
 
   const years = Object.keys(byYear).map(Number).sort((a, b) => b - a);
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  body.innerHTML = years.map(yr => `
-    <div class="notif-year-group">
-      <div class="notif-year-label">${yr}</div>
-      ${byYear[yr].map(n => `
-        <div class="notif-item ${n.read ? '' : 'unread'}">
-          <div class="notif-dot"></div>
-          <div class="notif-content">
-            <div class="notif-title">${escapeHtml(n.title)}</div>
-            <div class="notif-desc">${escapeHtml(n.desc)}</div>
-          </div>
-        </div>
-      `).join('')}
-    </div>
-  `).join('');
+  body.innerHTML = years.map(yr => {
+    // Sort within year by month (ascending)
+    const items = byYear[yr].slice().sort((a, b) => (a.month || 0) - (b.month || 0));
+    return `
+      <div class="notif-year-group">
+        <div class="notif-year-label">${yr}</div>
+        ${items.map(n => {
+          const cat = HEADLINE_CATEGORIES[n.cat] || HEADLINE_CATEGORIES.general;
+          const mLabel = monthNames[(n.month || 1) - 1];
+          return `
+            <div class="notif-item ${n.read ? '' : 'unread'}">
+              <div class="notif-tag" style="background:${cat.color}20; color:${cat.color};">
+                ${cat.label}
+              </div>
+              <div class="notif-content">
+                <div class="notif-meta">${mLabel} ${n.year}</div>
+                <div class="notif-title">${escapeHtml(n.title)}</div>
+                <div class="notif-desc">${escapeHtml(n.desc)}</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }).join('');
 }
 
 // =========================================================
@@ -144,7 +165,6 @@ function bindNotificationBell() {
   updateBellBadge();
 }
 
-// Self-bind when DOM is ready
 document.addEventListener('DOMContentLoaded', bindNotificationBell);
 window.addEventListener('load', bindNotificationBell);
 setTimeout(bindNotificationBell, 500);
