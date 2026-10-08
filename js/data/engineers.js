@@ -1,25 +1,24 @@
 // js/data/engineers.js
-// Pool engineer yang bisa direkrut. Setiap engineer punya spesialisasi.
+// Engineer pool. Rebalanced for $5,000 starting economy.
 
 const SPECIALTIES = {
-  microarch:  { name: 'Microarchitecture', icon: '🧩', desc: '+IPC, +performa',           effect: 'perf' },
-  cache:      { name: 'Cache Design',      icon: '📦', desc: '+cache efisien, -latensi',  effect: 'cache' },
-  clock:      { name: 'Clock & Timing',    icon: '⏱️', desc: '+clock speed aman',         effect: 'clock' },
-  thermal:    { name: 'Thermal Design',    icon: '🌡️', desc: '-TDP, +efisiensi',          effect: 'thermal' },
-  verification:{ name: 'Verification',     icon: '🔍', desc: '+yield, -bug',              effect: 'yield' },
-  io:         { name: 'I/O & Memory',      icon: '🔌', desc: '+bandwidth memori',         effect: 'io' },
-  process:    { name: 'Process Integration',icon:'⚗️', desc: '+node maturity',            effect: 'process' },
+  microarch:    { name: 'Microarchitecture', icon: '🧩', desc: '+IPC, +performance',     effect: 'perf' },
+  cache:        { name: 'Cache Design',      icon: '📦', desc: '+cache efficiency',      effect: 'cache' },
+  clock:        { name: 'Clock & Timing',    icon: '⏱️', desc: '+safe clock headroom',    effect: 'clock' },
+  thermal:      { name: 'Thermal Design',    icon: '🌡️', desc: '-TDP, +efficiency',       effect: 'thermal' },
+  verification: { name: 'Verification',      icon: '🔍', desc: '+yield, -bugs',           effect: 'yield' },
+  io:           { name: 'I/O & Memory',      icon: '🔌', desc: '+memory bandwidth',       effect: 'io' },
+  process:      { name: 'Process Integration', icon: '⚗️', desc: '+node maturity',         effect: 'process' },
 };
 
 const LEVELS = {
-  C:  { name: 'Junior',   salaryMult: 1.0,  effectMult: 0.6, color: 'fg-2' },
-  B:  { name: 'Mid',      salaryMult: 1.8,  effectMult: 1.0, color: 'fg-1' },
-  A:  { name: 'Senior',   salaryMult: 3.2,  effectMult: 1.5, color: 'accent' },
-  S:  { name: 'Principal',salaryMult: 6.0,  effectMult: 2.2, color: 'purple' },
-  SS: { name: 'Legendary',salaryMult: 12.0, effectMult: 3.5, color: 'warn' },
+  C:  { name: 'Junior',    salaryMult: 1.0,  effectMult: 0.6, color: 'fg-2' },
+  B:  { name: 'Mid',       salaryMult: 2.0,  effectMult: 1.0, color: 'fg-1' },
+  A:  { name: 'Senior',    salaryMult: 4.0,  effectMult: 1.5, color: 'accent' },
+  S:  { name: 'Principal', salaryMult: 8.0,  effectMult: 2.2, color: 'purple' },
+  SS: { name: 'Legendary', salaryMult: 16.0, effectMult: 3.5, color: 'warn' },
 };
 
-// Nama fiktif dari berbagai negara — biar terasa industri global
 const FIRST_NAMES = [
   'Kenji','Hiroshi','Yuki','Minjun','Seoyeon','Wei','Li','Chen',
   'Rajesh','Priya','Anil','Sanjay',
@@ -38,36 +37,32 @@ const LAST_NAMES = [
   'Smith','Johnson','Williams','Brown','Davis','Miller',
 ];
 
-// Rating awal untuk generate engineer acak.
-// Salary dihitung dari level * base.
-const BASE_SALARY = 8000; // USD/bulan
+// Base salary per turn (1 turn = 1 month). C-level = $60.
+const BASE_SALARY = 60;
 
 function _randPick(arr, rng = Math.random) {
   return arr[Math.floor(rng() * arr.length)];
 }
 
-// Generate satu engineer acak. Bisa dipanggil saat startup untuk isi pool.
 function generateEngineer(rng = Math.random, forceLevel = null) {
   const first = _randPick(FIRST_NAMES, rng);
   const last  = _randPick(LAST_NAMES, rng);
 
-  // Distribusi level: C 45%, B 30%, A 18%, S 6%, SS 1%
   let level = forceLevel;
   if (!level) {
     const r = rng();
-    if (r < 0.45) level = 'C';
-    else if (r < 0.75) level = 'B';
-    else if (r < 0.93) level = 'A';
-    else if (r < 0.99) level = 'S';
-    else level = 'SS';
+    if (r < 0.50) level = 'C';        // 50% junior
+    else if (r < 0.80) level = 'B';   // 30% mid
+    else if (r < 0.94) level = 'A';   // 14% senior
+    else if (r < 0.99) level = 'S';   // 5% principal
+    else level = 'SS';                // 1% legendary
   }
 
   const specKeys = Object.keys(SPECIALTIES);
   const spec = _randPick(specKeys, rng);
 
   const lv = LEVELS[level];
-  // Salary dengan variasi ±20%
-  const variation = 0.8 + rng() * 0.4;
+  const variation = 0.85 + rng() * 0.30; // ±15%
   const salary = Math.round(BASE_SALARY * lv.salaryMult * variation);
 
   return {
@@ -76,12 +71,12 @@ function generateEngineer(rng = Math.random, forceLevel = null) {
     level,
     specialty: spec,
     salary,
-    loyalty: 70 + Math.floor(rng() * 30),  // 70-100
-    hiredYear: null,                        // diisi saat direkrut
+    loyalty: 70 + Math.floor(rng() * 30),
+    hiredYear: null,
   };
 }
 
-function generatePool(count = 8, rng = Math.random) {
+function generatePool(count = 6, rng = Math.random) {
   const pool = [];
   for (let i = 0; i < count; i++) pool.push(generateEngineer(rng));
   return pool;
@@ -95,19 +90,19 @@ function getSpecialtyInfo(id) {
   return SPECIALTIES[id] || null;
 }
 
-// Biaya rekrut = 3x salary bulanan (signing bonus)
+// Hire cost = 3× monthly salary (signing bonus)
 function getHireCost(eng) {
   return eng.salary * 3;
 }
 
-// Biaya pelatihan: naikkan level satu tingkat
+// Training cost = jump to next level
 function getTrainingCost(eng) {
-  const levelOrder = ['C','B','A','S','SS'];
-  const idx = levelOrder.indexOf(eng.level);
-  if (idx >= levelOrder.length - 1) return null; // sudah maksimal
-  const nextLevel = levelOrder[idx + 1];
+  const order = ['C','B','A','S','SS'];
+  const idx = order.indexOf(eng.level);
+  if (idx >= order.length - 1) return null;
+  const nextLevel = order[idx + 1];
   const nextLv = LEVELS[nextLevel];
-  return Math.round(eng.salary * nextLv.salaryMult * 4);
+  return Math.round(eng.salary * (nextLv.salaryMult / LEVELS[eng.level].salaryMult) * 2);
 }
 
 function getNextLevel(currentLevel) {
