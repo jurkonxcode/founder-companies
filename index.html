@@ -188,18 +188,27 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
       <span>Dashboard</span>
     </button>
-    <button class="nav-btn" data-panel="design">
+
+    <button class="nav-btn" id="nav-create">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m0 0 4-4m-4 4-4-4M4 12h16M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></svg>
       <span>Create</span>
     </button>
+
+    <button class="nav-btn" data-panel="production">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M15 9h.01M9 13h.01M15 13h.01M9 17h.01M15 17h.01"/></svg>
+      <span>Production</span>
+    </button>
+
     <button class="nav-btn" data-panel="team">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87"/></svg>
       <span>Team</span>
     </button>
+
     <button class="nav-btn" data-panel="research">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
       <span>Research</span>
     </button>
+
     <button class="nav-btn" data-panel="market">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-4 4 3 5-7"/></svg>
       <span>Market</span>
@@ -245,14 +254,33 @@
   (function () {
     var V = window.__FC_VERSION__ || Date.now();
     var scripts = [
-      'js/data/tech.js','js/data/isa.js','js/data/engineers.js','js/data/segments.js',
-      'js/data/competitors.js','js/data/events.js','js/data/archetypes.js','js/data/difficulties.js',
-      'js/systems/chipDesign.js','js/systems/production.js','js/systems/team.js',
-      'js/systems/research.js','js/systems/market.js','js/systems/finance.js',
+      'js/data/tech.js',
+      'js/data/isa.js',
+      'js/data/engineers.js',
+      'js/data/segments.js',
+      'js/data/competitors.js',
+      'js/data/events.js',
+      'js/data/archetypes.js',
+      'js/data/difficulties.js',
+      'js/data/designer-config.js',
+      'js/systems/chipDesign.js',
+      'js/systems/production.js',
+      'js/systems/team.js',
+      'js/systems/research.js',
+      'js/systems/market.js',
+      'js/systems/finance.js',
       'js/state.js',
-      'js/ui/layout.js','js/ui/systemStatus.js','js/ui/panelDashboard.js','js/ui/panelDesign.js',
-      'js/ui/panelProduction.js','js/ui/panelTeam.js','js/ui/panelResearch.js',
-      'js/ui/panelMarket.js','js/ui/panelFinance.js','js/ui/menu.js',
+      'js/ui/layout.js',
+      'js/ui/systemStatus.js',
+      'js/ui/panelDashboard.js',
+      'js/ui/panelDesign.js',
+      'js/ui/panelProduction.js',
+      'js/ui/panelTeam.js',
+      'js/ui/panelResearch.js',
+      'js/ui/panelMarket.js',
+      'js/ui/panelFinance.js',
+      'js/ui/menu.js',
+      'js/ui/designer.js',
       'js/ui/profile.js',
       'js/main.js'
     ];
