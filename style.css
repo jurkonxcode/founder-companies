@@ -1329,3 +1329,105 @@ table td.bad  { color: var(--bad); }
   .speed-btn { min-width: 42px !important; padding: 0 10px !important; font-size: 12px !important; }
   .nav-btn span { font-size: 8px !important; }
 }
+/* =========================================================
+   DEVICE STATUS BAR — mobile only
+   Repositioned as fixed top bar, hidden on desktop.
+   ========================================================= */
+
+/* Desktop: hide it entirely */
+.device-status { display: none !important; }
+
+/* Mobile: fixed bar at the very top */
+@media (max-width: 900px) {
+  :root {
+    --statusbar-h: 28px;
+    --safe-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Push app content down by the status bar height */
+  #app {
+    padding-top: calc(var(--statusbar-h) + var(--safe-top));
+    height: 100dvh;
+  }
+
+  /* Show status bar as fixed bar at very top */
+  .device-status {
+    display: flex !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(var(--statusbar-h) + var(--safe-top));
+    padding: var(--safe-top) 16px 0;
+    background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+    border-bottom: 1px solid var(--line);
+    z-index: 100;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--fg-2);
+    gap: 8px;
+    box-sizing: border-box;
+  }
+
+  /* Reorder: clock on left, battery on right */
+  .device-status .dev-clock {
+    order: 0;
+    font-weight: 600;
+    color: var(--fg-1);
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    flex: 1;
+    text-align: left;
+  }
+
+  .device-status .dev-battery {
+    order: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--fg-2);
+    flex-shrink: 0;
+  }
+
+  /* Hide session timer & percentage — icon only */
+  .device-status .dev-session { display: none !important; }
+  .device-status .bat-pct { display: none !important; }
+
+  /* Compact battery icon (iOS-like) */
+  .device-status .bat-shape {
+    width: 22px;
+    height: 11px;
+    border: 1.5px solid currentColor;
+    border-radius: 3px;
+    padding: 1px;
+    position: relative;
+    box-sizing: border-box;
+  }
+  .device-status .bat-shape::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    right: -3px;
+    width: 2px;
+    height: 4px;
+    background: currentColor;
+    border-radius: 0 1.5px 1.5px 0;
+  }
+  .device-status .bat-fill {
+    height: 100%;
+    background: currentColor;
+    border-radius: 1px;
+    transition: width 0.6s ease;
+  }
+
+  /* Color states (already in main CSS but make sure they apply) */
+  .dev-battery.mid      { color: var(--warn); }
+  .dev-battery.low      { color: var(--bad); }
+  .dev-battery.charging { color: var(--good); }
+  .dev-battery.charging .bat-fill {
+    animation: chargePulse 1.8s ease-in-out infinite;
+  }
+}
