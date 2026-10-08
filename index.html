@@ -3,23 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<meta name="theme-color" content="#0a0d12" />
+<meta name="theme-color" content="#f5efe3" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <title>Founder Companies</title>
-
-<!-- =========================================================
-     AUTO CACHE-BUST
-     Setiap reload, versi berubah otomatis = selalu ambil fresh.
-     Untuk "freeze" cache, ubah baris __V__ menjadi:
-         var __V__ = 'v1';
-     lalu ganti angka setiap kali kamu update file.
-     ========================================================= -->
 <script>
   (function () {
-    var __V__ = Date.now();                 // <-- auto cache-bust
-    // var __V__ = 'v1';                    // <-- uncomment untuk freeze
+    var __V__ = Date.now();
     window.__FC_VERSION__ = __V__;
     document.write('<link rel="stylesheet" href="style.css?v=' + __V__ + '">');
   })();
@@ -29,8 +20,6 @@
 
 <!-- ============ MENU OVERLAY ============ -->
 <div id="menu">
-
-  <!-- ===== SCREEN 1: MAIN MENU ===== -->
   <div class="menu-screen active" data-screen="main">
     <div class="menu-brand">
       <div class="menu-logo">
@@ -60,35 +49,25 @@
     </div>
 
     <div class="menu-card continue" id="menu-continue" style="display:none">
-      <div class="card-icon accent">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-      </div>
+      <div class="card-icon accent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></div>
       <div class="card-body">
         <div class="card-title">Continue</div>
         <div class="card-meta" id="continue-meta"></div>
       </div>
-      <div class="card-chevron">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-      </div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></div>
     </div>
 
     <div class="menu-card" data-action="new-game">
-      <div class="card-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>
-      </div>
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></div>
       <div class="card-body">
         <div class="card-title">New Game</div>
-        <div class="card-sub">Choose Standard rules or configure a Freeplay world.</div>
+        <div class="card-sub">Choose an archetype and build your semiconductor empire.</div>
       </div>
-      <div class="card-chevron">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-      </div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></div>
     </div>
 
     <div class="menu-card locked">
-      <div class="card-icon muted">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2 2 12l10 10 10-10z"/></svg>
-      </div>
+      <div class="card-icon muted"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2 2 12l10 10 10-10z"/></svg></div>
       <div class="card-body">
         <div class="card-title">Special Style</div>
         <div class="card-sub">Archive Edition · Requires both expansions.</div>
@@ -99,18 +78,13 @@
     <div class="menu-section">Events &amp; Studio</div>
     <div class="menu-row-2">
       <div class="mini-card dark">
-        <div class="mini-tag">
-          <span>Player Council</span>
-          <span class="mini-badge">New</span>
-        </div>
+        <div class="mini-tag"><span>Player Council</span><span class="mini-badge">New</span></div>
         <div class="mini-title">Latest update: ads, speed, and visuals</div>
         <div class="mini-desc">4 decisions · about a minute</div>
         <span class="mini-cta">Start</span>
       </div>
       <div class="mini-card">
-        <div class="mini-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="M18.5 2.5 22 6l-7 7-3-3z"/><path d="m2 22 5.5-1.5L19.5 8.5 15.5 4.5 3.5 16.5z"/></svg>
-        </div>
+        <div class="mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="M18.5 2.5 22 6l-7 7-3-3z"/><path d="m2 22 5.5-1.5L19.5 8.5 15.5 4.5 3.5 16.5z"/></svg></div>
         <div class="mini-tag"><span>Creative</span></div>
         <div class="mini-title">Box Studio</div>
         <div class="mini-desc">Draw your own retail packaging in a separate creative desk.</div>
@@ -119,60 +93,20 @@
     </div>
 
     <div class="menu-bottom-row">
-      <button class="bottom-btn" id="menu-load-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
-        Load Game
-      </button>
-      <button class="bottom-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3"/></svg>
-        What's New
-      </button>
+      <button class="bottom-btn" id="menu-load-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Load Game</button>
+      <button class="bottom-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3"/></svg>What's New</button>
     </div>
   </div>
 
-  <!-- ===== SCREEN 2: MODE (kept for compatibility; unused in Option A) ===== -->
-  <div class="menu-screen" data-screen="mode">
-    <div class="menu-back-head">
-      <button class="back-btn" data-back="main">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg>
-      </button>
-      <div class="menu-head-text">
-        <div class="menu-eyebrow">New Game</div>
-        <h2 class="menu-head-title">Choose a game mode</h2>
-      </div>
-    </div>
-    <p class="menu-lead">Start with the original rules, or build a custom world with your own parameters.</p>
-
-    <div class="mode-card" data-mode="standard" style="--mode-color:#3f7e9c; --mode-soft:#ddecf4">
-      <div class="mode-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></div>
-      <div class="mode-tag">Original Companies</div>
-      <div class="mode-title">Standard</div>
-      <div class="mode-desc">Play as Founder Semiconductor with balanced advantages against eight historical AI rivals.</div>
-      <span class="mode-cta">Choose Standard <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></span>
-    </div>
-
-    <div class="mode-card" data-mode="freeplay" style="--mode-color:#c47a2e; --mode-soft:#fae9d2">
-      <div class="mode-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h10M18 18h2"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="18" r="2"/></svg></div>
-      <div class="mode-tag">Custom Company Field</div>
-      <div class="mode-title">Freeplay</div>
-      <div class="mode-desc">Pick from eight archetypes with unique identities and bonuses.</div>
-      <span class="mode-cta">Open Freeplay <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></span>
-    </div>
-  </div>
-
-  <!-- ===== SCREEN 3: CHOOSE COMPANY ===== -->
   <div class="menu-screen" data-screen="company">
     <div class="menu-back-head">
-      <button class="back-btn" data-back="main">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg>
-      </button>
+      <button class="back-btn" data-back="main"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg></button>
       <div class="menu-head-text"><h2 class="menu-head-title">Choose your company</h2></div>
       <button class="help-btn" id="menu-help-btn">?</button>
     </div>
     <p class="menu-lead">8 archetypes · unique specializations · real gameplay bonuses</p>
     <div class="company-grid" id="company-grid"></div>
   </div>
-
 </div>
 
 <div id="menu-modal"></div>
@@ -180,11 +114,12 @@
 <!-- ============ GAME APP ============ -->
 <div id="app" class="pre-game">
 
+  <!-- TOP BAR -->
   <header id="topbar">
     <div class="brand">
       <div class="brand-logo">FC</div>
       <div class="brand-text">
-        <div class="brand-name">Founder Companies</div>
+        <div class="brand-name" id="brand-company">Founder Companies</div>
         <small id="brand-sub">Semiconductor Empire · 1995</small>
       </div>
     </div>
@@ -192,75 +127,44 @@
     <div class="stats-strip">
       <div class="stat"><div class="label">Date</div><div class="value" id="stat-date">Jan 1995</div></div>
       <div class="stat"><div class="label">Turn</div><div class="value" id="stat-turn">0</div></div>
-      <div class="stat"><div class="label">Cash</div><div class="value" id="stat-money">$5.00K</div></div>
       <div class="stat"><div class="label">Research</div><div class="value" id="stat-rp">0 RP</div></div>
-      <div class="stat"><div class="label">Market Share</div><div class="value" id="stat-share">2.0%</div></div>
+      <div class="stat"><div class="label">Share</div><div class="value" id="stat-share">2.0%</div></div>
       <div class="stat"><div class="label">Engineers</div><div class="value" id="stat-team">0</div></div>
     </div>
 
+    <div class="cash-display">
+      <div class="cash-value" id="stat-money">$5.00K</div>
+      <div class="cash-label">Cash on hand</div>
+    </div>
+
     <div class="device-status">
-      <div class="dev-session" id="dev-session" title="Play time">00:00</div>
-      <div class="dev-battery" id="dev-battery" title="Battery">
+      <div class="dev-clock" id="dev-clock">--:--</div>
+      <div class="dev-battery" id="dev-battery">
         <div class="bat-shape"><div class="bat-fill" id="dev-bat-fill" style="width:100%"></div></div>
-        <span class="bat-pct" id="dev-bat-pct">--%</span>
       </div>
-      <div class="dev-clock" id="dev-clock" title="Device time">--:--</div>
     </div>
 
     <div class="topbar-actions">
-      <button class="btn-ghost" id="btn-save" title="Ctrl+S">
+      <button class="btn-ghost" id="btn-save" title="Save">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
-        Save
       </button>
-      <button class="btn-ghost danger" id="btn-reset" title="Reset game">
+      <button class="btn-ghost danger" id="btn-reset" title="Reset">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-        Reset
       </button>
     </div>
   </header>
 
-<!-- Speed control bar -->
-<div id="speed-bar">
-  <button class="speed-btn" data-speed="0" title="Pause">
-    <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
-  </button>
-  <button class="speed-btn" data-speed="1" title="Normal speed">1×</button>
-  <button class="speed-btn" data-speed="2" title="Fast">2×</button>
-  <button class="speed-btn" data-speed="4" title="Very fast">4×</button>
-</div>
+  <!-- SPEED BAR -->
+  <div id="speed-bar">
+    <button class="speed-btn" data-speed="0" title="Pause">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+    </button>
+    <button class="speed-btn" data-speed="1">1×</button>
+    <button class="speed-btn" data-speed="2">2×</button>
+    <button class="speed-btn" data-speed="4">4×</button>
+  </div>
 
-<main id="layout">
-    <nav id="nav">
-      <button class="nav-btn active" data-panel="dashboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-        <span>Dashboard</span>
-      </button>
-      <button class="nav-btn" data-panel="design">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m0 0 4-4m-4 4-4-4M4 12h16M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></svg>
-        <span>Design</span>
-      </button>
-      <button class="nav-btn" data-panel="production">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M15 9h.01M9 13h.01M15 13h.01M9 17h.01M15 17h.01"/></svg>
-        <span>Production</span>
-      </button>
-      <button class="nav-btn" data-panel="team">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87"/></svg>
-        <span>Team</span>
-      </button>
-      <button class="nav-btn" data-panel="research">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-        <span>Research</span>
-      </button>
-      <button class="nav-btn" data-panel="market">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-4 4 3 5-7"/></svg>
-        <span>Market</span>
-      </button>
-      <button class="nav-btn" data-panel="finance">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        <span>Finance</span>
-      </button>
-    </nav>
-
+  <main id="layout">
     <section id="panel">
       <div class="panel-head">
         <h2 id="panel-title">Dashboard</h2>
@@ -278,34 +182,53 @@
     </aside>
   </main>
 
+  <!-- BOTTOM NAV (5 items) -->
+  <nav id="nav">
+    <button class="nav-btn active" data-panel="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      <span>Dashboard</span>
+    </button>
+    <button class="nav-btn" data-panel="design">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m0 0 4-4m-4 4-4-4M4 12h16M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></svg>
+      <span>Create</span>
+    </button>
+    <button class="nav-btn" data-panel="team">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87"/></svg>
+      <span>Team</span>
+    </button>
+    <button class="nav-btn" data-panel="research">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span>Research</span>
+    </button>
+    <button class="nav-btn" data-panel="market">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-4 4 3 5-7"/></svg>
+      <span>Market</span>
+    </button>
+  </nav>
+
   <footer id="bottombar">
     <div class="bb-left">
       <span class="bb-label">Turn</span>
       <span class="bb-value" id="bb-turn">0</span>
       <span class="bb-sep">·</span>
-      <span class="bb-label">Date</span>
       <span class="bb-value" id="bb-date">Jan 1995</span>
     </div>
     <div class="bb-center">
-      <button class="news-toggle" id="news-toggle" title="News feed">
+      <button class="news-toggle" id="news-toggle">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg>
         <span class="news-count" id="news-count">0</span>
       </button>
       <span class="bb-note" id="bb-note">Ready for next turn.</span>
     </div>
     <div class="bb-right">
-      <button class="btn-next-turn" id="btn-next-turn">
-        Next Turn
+      <button class="btn-next-turn" id="btn-next-turn">Next Turn
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
     </div>
   </footer>
 
   <div id="news-drawer" class="news-drawer">
-    <div class="news-drawer-head">
-      <h3>News Feed</h3>
-      <button class="news-drawer-close" id="news-drawer-close">✕</button>
-    </div>
+    <div class="news-drawer-head"><h3>News Feed</h3><button class="news-drawer-close" id="news-drawer-close">✕</button></div>
     <div class="news-drawer-body" id="news-drawer-body"></div>
   </div>
   <div id="news-backdrop" class="news-backdrop"></div>
@@ -314,47 +237,20 @@
   <div id="modal-wrap"></div>
 </div>
 
-<!-- =========================================================
-     SCRIPTS — auto cache-busted
-     Tambah file baru = cukup tambah ke array di bawah.
-     ========================================================= -->
 <script>
   (function () {
     var V = window.__FC_VERSION__ || Date.now();
     var scripts = [
-      // data
-      'js/data/tech.js',
-      'js/data/isa.js',
-      'js/data/engineers.js',
-      'js/data/segments.js',
-      'js/data/competitors.js',
-      'js/data/events.js',
-      'js/data/archetypes.js',
-      'js/data/difficulties.js',
-      // systems
-      'js/systems/chipDesign.js',
-      'js/systems/production.js',
-      'js/systems/team.js',
-      'js/systems/research.js',
-      'js/systems/market.js',
-      'js/systems/finance.js',
-      // state
+      'js/data/tech.js','js/data/isa.js','js/data/engineers.js','js/data/segments.js',
+      'js/data/competitors.js','js/data/events.js','js/data/archetypes.js','js/data/difficulties.js',
+      'js/systems/chipDesign.js','js/systems/production.js','js/systems/team.js',
+      'js/systems/research.js','js/systems/market.js','js/systems/finance.js',
       'js/state.js',
-      // ui
-      'js/ui/layout.js',
-      'js/ui/systemStatus.js',
-      'js/ui/panelDashboard.js',
-      'js/ui/panelDesign.js',
-      'js/ui/panelProduction.js',
-      'js/ui/panelTeam.js',
-      'js/ui/panelResearch.js',
-      'js/ui/panelMarket.js',
-      'js/ui/panelFinance.js',
-      'js/ui/menu.js',
-      // main
+      'js/ui/layout.js','js/ui/systemStatus.js','js/ui/panelDashboard.js','js/ui/panelDesign.js',
+      'js/ui/panelProduction.js','js/ui/panelTeam.js','js/ui/panelResearch.js',
+      'js/ui/panelMarket.js','js/ui/panelFinance.js','js/ui/menu.js',
       'js/main.js'
     ];
-
     for (var i = 0; i < scripts.length; i++) {
       document.write('<script src="' + scripts[i] + '?v=' + V + '"><\/script>');
     }
