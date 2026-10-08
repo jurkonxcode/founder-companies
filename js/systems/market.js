@@ -1,6 +1,6 @@
 // js/systems/market.js
 // Demand, sales, market share, competitor simulation.
-// Rebalanced for $5k economy.
+// Difficulty now affects rival behavior.
 
 // ===== Demand multiplier from active events =====
 function getActiveEventMultiplier(state, categoryId) {
@@ -49,32 +49,57 @@ function calcProductSales(product, state, year) {
 }
 
 // ===== Update player market share =====
+// Now respects difficulty: rivalAggression scales the natural drift.
 function updateMarketShare(state, recentSales) {
+  const diff = getActiveDifficulty(state);
   let delta = 0;
-  delta -= 0.0005;
 
+  // Natural erosion — scaled by difficulty
+  delta -= 0.0005 * diff.rivalAggression;
+
+  // Boost from recently launched successful products
   for (const s of recentSales) {
     if (s.turnsSinceLaunch <= 2) {
       delta += s.fit * 0.008;
     }
   }
 
+  // Competitor pressure — scaled by difficulty
   const activeComps = getActiveCompetitors(state.tahun);
   for (const c of activeComps) {
-    delta -= c.aggression * 0.0005;
+    delta -= c.aggression * 0.0005 * diff.rivalAggression;
   }
 
   state.marketShare = Math.max(0.005, Math.min(0.75, state.marketShare + delta));
 }
 
 // ===== Simulate competitor actions =====
+// Now respects difficulty:
+//   - rivalAggression multiplies release chance
+//   - rivalAnswerScope determines how many categories they counter
+//   - rivalReactionTurns gates how quickly they respond after your launch
 function simulateCompetitorActions(state, rng = Math.random) {
+  const diff = getActiveDifficulty(state);
   const events = [];
   const activeComps = getActiveCompetitors(state.tahun);
 
-  for (const c of activeComps) {
-    if (rng() > c.aggression * 0.03) continue;
+  // Find last launch turn (used to enforce reaction delay)
+  const lastLaunch = state.products
+    .filter(p => p.launched)
+    .sort((a, b) => (b.launchTurn || 0) - (a.launchTurn || 0))[0];
+  const turnsSinceLaunch = lastLaunch ? state.turn - lastLaunch.launchTurn : 999;
 
+  // Rivals are slower to respond right after a launch on lower difficulties
+  let responseGate = 1.0;
+  if (turnsSinceLaunch < diff.rivalReactionTurns) {
+    responseGate = 0.3;
+  }
+
+  for (const c of activeComps) {
+    const chance = c.aggression * 0.03 * diff.rivalAggression * responseGate;
+    if (rng() > chance) continue;
+
+    // Available categories for this competitor
     const availableCats = c.focus.filter(f => {
       if (f === 'mobile' || f === 'smartphone') return state.tahun >= 2007;
       if (f === 'gpu') return state.tahun >= 1999;
@@ -83,16 +108,26 @@ function simulateCompetitorActions(state, rng = Math.random) {
     });
     if (availableCats.length === 0) continue;
 
-    const cat = availableCats[Math.floor(rng() * availableCats.length)];
+    // Pick how many categories this release covers
+    const scope = Math.min(diff.rivalAnswerScope, availableCats.length);
+    const shuffled = [...availableCats].sort(() => rng() - 0.5);
+    const chosen = shuffled.slice(0, scope);
 
+    // Determine competitor node (0-1 behind player)
     const techs = getTechsUpToYear(state.tahun);
     const playerIdx = techs.findIndex(t => t.id === state.currentNode);
     const compIdx = Math.max(0, playerIdx - Math.floor(rng() * 2));
     const compTech = techs[compIdx] || techs[0];
 
-    const shareShift = 0.004 * c.aggression * (compTech.refPerf / 200);
-
-    events.push({ competitor: c, category: cat, tech: compTech, shareShift });
+    for (const cat of chosen) {
+      const shareShift = 0.004 * c.aggression * (compTech.refPerf / 200) * diff.rivalAggression;
+      events.push({
+        competitor: c,
+        category: cat,
+        tech: compTech,
+        shareShift,
+      });
+    }
   }
 
   return events;
