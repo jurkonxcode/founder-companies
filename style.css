@@ -1775,3 +1775,34 @@ table td.bad { color: var(--bad); }
   .nav-btn .nav-icon svg { inset: 7px; width: 18px; height: 18px; }
   .profile-stat-grid { grid-template-columns: repeat(2, 1fr); }
    }
+/* =========================================================
+   NOTIFICATION CATEGORY TAGS
+   ========================================================= */
+.notif-item {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.notif-tag {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-top: 2px;
+  min-width: 46px;
+  text-align: center;
+}
+.notif-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--fg-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
