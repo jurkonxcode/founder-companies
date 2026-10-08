@@ -1,5 +1,5 @@
 // js/data/archetypes.js
-// 8 company archetypes. Each has real gameplay bonuses.
+// 8 company archetypes with full detail for the selection modal.
 
 const ARCHETYPES = [
   {
@@ -12,6 +12,14 @@ const ARCHETYPES = [
     subTag: 'GENERALIST',
     tagline: 'The original vision',
     desc: 'No bonuses, no penalties. Prove yourself from scratch against eight rivals.',
+    longDesc: 'A clean start with no modifications. Every perk is neutral, every disadvantage is neutral. You get exactly what the rules give you and nothing more. The purest test of skill against eight rivals who each specialize in something you don\'t.',
+    goodFor: 'Best for players who want the intended experience and want to learn the systems without special advantages.',
+    perkDetails: [
+      ['Starting cash', '$5,000'],
+      ['Performance', 'Balanced across all categories'],
+      ['Research', 'Standard curve'],
+      ['Penalties', 'None'],
+    ],
     difficulty: 'Normal',
     bonuses: {
       startingCash: 5000,
@@ -37,6 +45,14 @@ const ARCHETYPES = [
     subTag: 'CLOCK PIONEERS',
     tagline: 'Frequency is king',
     desc: 'Pioneers of clock speed. Every CPU pushes the envelope further.',
+    longDesc: 'Pioneers of the frequency race. Vertex built its reputation on squeezing every megahertz out of each process node, often before the node itself was ready. Their CPUs run hotter and faster than anyone else\'s, and the market rewards that.',
+    goodFor: 'Best for players who want to dominate the CPU market through raw clock speed and lead the frequency race.',
+    perkDetails: [
+      ['Starting cash', '$4,500'],
+      ['CPU performance', '+12%'],
+      ['Design cost', '+5% (penalty)'],
+      ['GPU & Mobile', 'Standard'],
+    ],
     difficulty: 'Normal',
     bonuses: {
       startingCash: 4500,
@@ -62,6 +78,14 @@ const ARCHETYPES = [
     subTag: 'PROCESS',
     tagline: 'Master of the small',
     desc: 'Process node perfectionists. Cheaper to research, more reliable to fabricate.',
+    longDesc: 'Obsessives of the production line. Helix treats the process node itself as the product — tuning yields, optimizing retooling, and squeezing every transistor of density out of each generation. Not flashy at launch, but they win by owning the line before rivals can rent one.',
+    goodFor: 'Best for players who want to lead fab efficiency and research new process nodes far ahead of rivals.',
+    perkDetails: [
+      ['Starting cash', '$5,500'],
+      ['Node research cost', '-18%'],
+      ['Design cost', '-8%'],
+      ['RP gain', '+10%'],
+    ],
     difficulty: 'Easy',
     bonuses: {
       startingCash: 5500,
@@ -88,6 +112,14 @@ const ARCHETYPES = [
     subTag: 'SOFTWARE',
     tagline: 'Ecosystems win wars',
     desc: 'Software-first culture. OS sells easier and every chip benefits from tight integration.',
+    longDesc: 'Software-first culture. Nexus believes a great chip means nothing without a great OS. Their vertical integration between silicon and software gives every product a subtle edge, especially on the mobile side where user experience matters most.',
+    goodFor: 'Best for players who want to build a tightly integrated hardware and software empire.',
+    perkDetails: [
+      ['Starting cash', '$4,800'],
+      ['CPU & Mobile performance', '+4%'],
+      ['Mobile TDP', '-5%'],
+      ['RP gain', '+5%'],
+    ],
     difficulty: 'Normal',
     bonuses: {
       startingCash: 4800,
@@ -114,6 +146,14 @@ const ARCHETYPES = [
     subTag: 'GRAPHICS',
     tagline: 'Pixels before profits',
     desc: 'Born from graphics. Every GPU you ship outruns the competition.',
+    longDesc: 'Born from graphics. Orion\'s founders came out of the workstation world where every frame mattered. Their GPUs outrun rivals by a comfortable margin, but the company is narrowly focused — CPUs and mobile are an afterthought.',
+    goodFor: 'Best for players who want to own the GPU market and ride the AI wave that arrives in 2017.',
+    perkDetails: [
+      ['Starting cash', '$4,200'],
+      ['GPU performance', '+15%'],
+      ['CPU performance', 'Standard'],
+      ['Mobile performance', 'Standard'],
+    ],
     difficulty: 'Normal',
     bonuses: {
       startingCash: 4200,
@@ -139,6 +179,14 @@ const ARCHETYPES = [
     subTag: 'R&D FIRST',
     tagline: 'Knowledge is capital',
     desc: 'A lab first, a company second. Research moves faster, but hardware costs more.',
+    longDesc: 'A lab first, a company second. Quantum spends more on R&D than any rival and holds its process advantage longer, but every chip it ships costs more to design. Patience is the price of dominance.',
+    goodFor: 'Best for players who want to reach 2nm before anyone else and win through superior engineering.',
+    perkDetails: [
+      ['Starting cash', '$3,800'],
+      ['RP gain', '+55%'],
+      ['Node research cost', '-5%'],
+      ['Design cost', '+12% (penalty)'],
+    ],
     difficulty: 'Hard',
     bonuses: {
       startingCash: 3800,
@@ -165,6 +213,14 @@ const ARCHETYPES = [
     subTag: 'LOW POWER',
     tagline: 'Efficiency is elegance',
     desc: 'Obsessed with power budgets. Mobile chips sip power and outperform their class.',
+    longDesc: 'Obsessed with power budgets. Aurora\'s engineers come from the embedded world where a milliwatt saved is a customer won. Their mobile chips sip power and still outperform the class, at the cost of a small CPU penalty that most users never notice.',
+    goodFor: 'Best for players who want to dominate the mobile boom of 2007 and beyond with ultra-efficient chips.',
+    perkDetails: [
+      ['Starting cash', '$4,500'],
+      ['Mobile performance', '+12%'],
+      ['Mobile TDP', '-28%'],
+      ['CPU performance', '-2% (penalty)'],
+    ],
     difficulty: 'Normal',
     bonuses: {
       startingCash: 4500,
@@ -191,6 +247,14 @@ const ARCHETYPES = [
     subTag: 'VERTICAL',
     tagline: 'From silicon to shelf',
     desc: 'Vertical integration. Laptops, phones, and chips all ship better together.',
+    longDesc: 'Vertical integration at its finest. Titan designs its own chips, builds its own laptops, and runs its own OS. Everything ships better together — at a cost, since maintaining three product lines simultaneously is expensive.',
+    goodFor: 'Best for players who want a balanced empire across all categories with strong cross-product synergies.',
+    perkDetails: [
+      ['Starting cash', '$4,000'],
+      ['All-category performance', '+5%'],
+      ['Mobile TDP', '-12%'],
+      ['Design cost', '+8% (penalty)'],
+    ],
     difficulty: 'Hard',
     bonuses: {
       startingCash: 4000,
@@ -211,4 +275,4 @@ const ARCHETYPES = [
 
 function getArchetype(id) {
   return ARCHETYPES.find(a => a.id === id) || null;
-    }
+}
