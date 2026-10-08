@@ -1,5 +1,6 @@
 // js/main.js
 // Entry point: menu init, game boot, turn loop, speed control.
+// 4-tab nav: Home · Create · Production · Market.
 
 // =========================================================
 // SPEED CONTROL
@@ -54,10 +55,10 @@ function renderAll() {
 function updateNavBadges() {
   const ready = state.projects.filter(p => p.status === 'done').length;
   setNavBadge('production', ready > 0);
-  const canResearch = canResearchNext(state).ok;
-  setNavBadge('research', canResearch);
   const candidates = state.pool.length;
-  setNavBadge('team', state.team.filter(e => !e.isFounder).length === 0 && candidates > 0);
+  // If team is empty (only founder) and candidates exist, we could badge production hub
+  const needTeam = state.team.filter(e => !e.isFounder).length === 0 && candidates > 0;
+  if (needTeam) setNavBadge('production', true);
 }
 
 // =========================================================
@@ -80,7 +81,7 @@ function nextTurn(fromAuto = false) {
     addLog(`Year ${state.tahun} begins.`, 'info');
   }
 
-  // 1b. Trigger headlines for the new month
+  // 1b. Trigger headlines for this month
   if (typeof checkMonthHeadlines === 'function') {
     checkMonthHeadlines(state.tahun, state.bulan);
   }
@@ -153,7 +154,7 @@ function nextTurn(fromAuto = false) {
     }
   }
 
-  // 10. Historical event (game-world event, not headline)
+  // 10. Historical event
   const histEv = getHistoricalEvent(state.tahun, state.bulan);
   if (histEv && !state.triggeredEvents.find(e => e.id === histEv.id)) {
     state.triggeredEvents.push({
@@ -291,6 +292,105 @@ function handleRandomEvent(ev) {
 }
 
 // =========================================================
+// PANEL ROUTER
+// =========================================================
+// Panels that still exist as full-view: 'dashboard', 'production'.
+// 'team', 'research' → redirect into Production hub (auto-scroll).
+// 'market' → opens the Market modal.
+// 'design' and 'finance' kept as legacy fallback.
+function renderPanel(name, focus) {
+  switch (name) {
+    case 'dashboard':
+    case 'home':
+      if (typeof showDashboard === 'function') showDashboard();
+      break;
+
+    case 'production':
+    case 'factory':
+      if (typeof showProduction === 'function') showProduction(focus);
+      break;
+
+    case 'team':
+      // Redirect to Production hub with scroll focus on team section
+      if (typeof showProduction === 'function') showProduction('team');
+      break;
+
+    case 'research':
+      // Redirect to Production hub with scroll focus on research section
+      if (typeof showProduction === 'function') showProduction('research');
+      break;
+
+    case 'market':
+      if (typeof openMarketModal === 'function') openMarketModal();
+      break;
+
+    case 'design':
+      if (typeof showDesign === 'function') showDesign();
+      break;
+
+    case 'finance':
+      if (typeof showFinance === 'function') showFinance();
+      break;
+
+    default:
+      if (typeof showDashboard === 'function') showDashboard();
+  }
+
+  // Update active tab in bottom nav (map aliases)
+  updateActiveTab(name);
+}
+
+function updateActiveTab(name) {
+  const tabMap = {
+    dashboard: 'dashboard',
+    home: 'dashboard',
+    production: 'production',
+    factory: 'production',
+    team: 'production',
+    research: 'production',
+    design: 'design',
+    finance: 'production',
+    market: null, // market is a modal, don't clear active tab
+  };
+  const target = tabMap[name];
+  if (target === null) return;
+
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    const panel = b.dataset.panel;
+    b.classList.toggle('active', panel === target);
+  });
+}
+
+// refreshCurrentPanel — re-render whatever is currently displayed
+let _currentPanel = 'dashboard';
+function refreshCurrentPanel() {
+  // Don't re-render if a modal is open, to avoid losing focus
+  const marketOpen = document.getElementById('market-modal')?.classList.contains('active');
+  const profileOpen = document.getElementById('profile-modal')?.classList.contains('active');
+  const designerOpen = document.getElementById('modal-wrap')?.classList.contains('active');
+
+  if (marketOpen || profileOpen || designerOpen) return;
+
+  // Re-render current tab
+  if (_currentPanel === 'dashboard') {
+    if (typeof showDashboard === 'function') showDashboard();
+  } else if (_currentPanel === 'production') {
+    if (typeof showProduction === 'function') showProduction();
+  } else if (_currentPanel === 'design') {
+    if (typeof showDesign === 'function') showDesign();
+  } else if (_currentPanel === 'finance') {
+    if (typeof showFinance === 'function') showFinance();
+  }
+}
+
+// Track panel when renderPanel is called
+const _origRenderPanel = renderPanel;
+window.renderPanel = function(name, focus) {
+  if (name && name !== 'market') _currentPanel = name;
+  return _origRenderPanel(name, focus);
+};
+
+// =========================================================
 // BINDINGS
 // =========================================================
 function bindGlobalActions() {
@@ -298,20 +398,31 @@ function bindGlobalActions() {
 }
 
 function bindNav() {
+  // Panels with data-panel (Home, Production)
   document.querySelectorAll('.nav-btn[data-panel]').forEach(btn => {
-    btn.addEventListener('click', () => renderPanel(btn.dataset.panel));
+    btn.addEventListener('click', () => {
+      _currentPanel = btn.dataset.panel;
+      renderPanel(btn.dataset.panel);
+    });
   });
 
-  const createBtn = document.getElementById('nav-create');
-  if (createBtn) {
-    createBtn.addEventListener('click', () => {
-      if (typeof openDesignerCategoryChooser === 'function') {
-        openDesignerCategoryChooser();
-      } else {
-        alert('designer.js not loaded. Check script tag in index.html.');
-      }
-    });
-  }
+  // Create button → designer modal
+  document.getElementById('nav-create')?.addEventListener('click', () => {
+    if (typeof openDesignerCategoryChooser === 'function') {
+      openDesignerCategoryChooser();
+    } else {
+      alert('designer.js not loaded. Check script tag in index.html.');
+    }
+  });
+
+  // Market button → market modal
+  document.getElementById('nav-market')?.addEventListener('click', () => {
+    if (typeof openMarketModal === 'function') {
+      openMarketModal();
+    } else {
+      alert('panelMarket.js not loaded.');
+    }
+  });
 }
 
 function bindKeyboard() {
@@ -327,13 +438,12 @@ function bindKeyboard() {
       e.preventDefault();
       togglePause();
     }
-    if (e.key === '1') { if (e.shiftKey) setSpeed(1); else renderPanel('dashboard'); }
-    if (e.key === '2') renderPanel('design');
-    if (e.key === '3') renderPanel('production');
-    if (e.key === '4') { if (e.shiftKey) setSpeed(4); else renderPanel('team'); }
-    if (e.key === '5') renderPanel('research');
-    if (e.key === '6') renderPanel('market');
-    if (e.key === '7') renderPanel('finance');
+
+    if (e.key === '1') { if (e.shiftKey) setSpeed(1); else { _currentPanel = 'dashboard'; renderPanel('dashboard'); } }
+    if (e.key === '2') { if (e.shiftKey) setSpeed(2); else { _currentPanel = 'production'; renderPanel('production'); } }
+    if (e.key === '3') { if (e.shiftKey) setSpeed(3); else { if (typeof openDesignerCategoryChooser === 'function') openDesignerCategoryChooser(); } }
+    if (e.key === '4') { if (e.shiftKey) setSpeed(4); else { if (typeof openMarketModal === 'function') openMarketModal(); } }
+
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
       if (saveGame()) toast('Game saved.', 'good');
@@ -355,6 +465,7 @@ function boot() {
   if (typeof initSystemStatus === 'function') initSystemStatus();
   if (typeof bindNewsDrawer === 'function') bindNewsDrawer();
   if (typeof bindNotificationBell === 'function') bindNotificationBell();
+  _currentPanel = 'dashboard';
   renderPanel('dashboard');
   renderAll();
 
