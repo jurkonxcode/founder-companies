@@ -145,11 +145,11 @@
     </div>
 
     <div class="topbar-actions">
-      <button class="btn-ghost" id="btn-save" title="Save">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
-      </button>
-      <button class="btn-ghost danger" id="btn-reset" title="Reset">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      <button class="profile-btn" id="btn-profile" title="Profile & Settings">
+        <div class="profile-avatar" id="profile-avatar">F</div>
+        <svg class="profile-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10">
+          <path d="m6 9 6 6 6-6"/>
+        </svg>
       </button>
     </div>
   </header>
@@ -182,7 +182,7 @@
     </aside>
   </main>
 
-  <!-- BOTTOM NAV (5 items) -->
+  <!-- BOTTOM NAV -->
   <nav id="nav">
     <button class="nav-btn active" data-panel="dashboard">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
@@ -227,6 +227,10 @@
     </div>
   </footer>
 
+  <!-- PROFILE MODAL -->
+  <div id="profile-modal"></div>
+
+  <!-- NEWS DRAWER -->
   <div id="news-drawer" class="news-drawer">
     <div class="news-drawer-head"><h3>News Feed</h3><button class="news-drawer-close" id="news-drawer-close">✕</button></div>
     <div class="news-drawer-body" id="news-drawer-body"></div>
@@ -249,6 +253,7 @@
       'js/ui/layout.js','js/ui/systemStatus.js','js/ui/panelDashboard.js','js/ui/panelDesign.js',
       'js/ui/panelProduction.js','js/ui/panelTeam.js','js/ui/panelResearch.js',
       'js/ui/panelMarket.js','js/ui/panelFinance.js','js/ui/menu.js',
+      'js/ui/profile.js',
       'js/main.js'
     ];
     for (var i = 0; i < scripts.length; i++) {
