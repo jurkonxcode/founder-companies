@@ -1212,3 +1212,120 @@ table td.bad  { color: var(--bad); }
   .menu-modal-card .modal-inner { padding: 22px 18px; }
   .menu-modal-card .modal-title { font-size: 22px; }
      }
+/* =========================================================
+   MOBILE HARD OVERRIDE — make sure it wins
+   ========================================================= */
+@media (max-width: 900px) {
+
+  /* Force hide desktop-only */
+  #log { display: none !important; }
+  #bottombar { display: none !important; }
+
+  /* Stack KPI cards */
+  .kpi-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Compact topbar */
+  #topbar {
+    padding: 0 12px !important;
+    gap: 8px !important;
+    height: 56px !important;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .brand { min-width: auto !important; padding-right: 8px !important; }
+  .brand-logo { width: 30px !important; height: 30px !important; font-size: 10px !important; }
+  .brand-text { display: none !important; }
+
+  .stats-strip {
+    overflow-x: auto !important;
+    flex: 1;
+    min-width: 0;
+  }
+  .stat {
+    padding: 4px 8px !important;
+    min-width: 56px !important;
+    border-right: 1px solid var(--line) !important;
+  }
+  .stat .label { font-size: 8px !important; margin-bottom: 1px !important; }
+  .stat .value { font-size: 11px !important; }
+
+  .cash-display {
+    padding: 0 4px !important;
+    flex-shrink: 0;
+  }
+  .cash-value { font-size: 18px !important; }
+  .cash-label { display: none !important; }
+
+  .device-status { display: none !important; }
+  .topbar-actions { padding-left: 4px !important; gap: 2px !important; }
+  .btn-ghost { width: 30px !important; height: 30px !important; }
+
+  /* Speed bar compact */
+  #speed-bar {
+    padding: 6px 12px !important;
+    gap: 3px !important;
+    height: 48px !important;
+  }
+  .speed-btn {
+    min-width: 48px !important;
+    height: 34px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+  }
+
+  /* Panel padding */
+  .panel-head { padding: 14px 16px 10px !important; }
+  .panel-head h2 { font-size: 20px !important; }
+  #panel-body { padding: 0 14px 90px !important; }
+
+  .kpi-card { padding: 14px 16px 12px !important; }
+  .kpi-value { font-size: 26px !important; }
+  .kpi-spark { height: 22px !important; }
+
+  .card { padding: 14px 16px !important; }
+  .card h3 { font-size: 15px !important; }
+  .section-title { font-size: 13px !important; margin: 16px 0 8px !important; }
+
+  .status-strip { grid-template-columns: repeat(3, 1fr) !important; }
+  .status-item { padding: 10px 6px !important; }
+  .si-label { font-size: 8px !important; }
+  .si-value { font-size: 15px !important; }
+
+  /* Floating Next Turn */
+  #btn-next-turn {
+    position: fixed !important;
+    right: 14px !important;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0)) !important;
+    padding: 13px 20px !important;
+    border-radius: 999px !important;
+    font-size: 13px !important;
+    z-index: 45 !important;
+    box-shadow: 0 6px 22px rgba(201,84,42,0.4) !important;
+  }
+
+  /* Nav is now the only bottom element */
+  #nav {
+    padding-bottom: env(safe-area-inset-bottom, 0) !important;
+  }
+
+  /* Toast position above floating button */
+  #toast-wrap {
+    bottom: calc(140px + env(safe-area-inset-bottom, 0)) !important;
+    right: 12px !important;
+    left: 12px !important;
+    align-items: stretch !important;
+  }
+  .toast { min-width: auto !important; max-width: none !important; }
+}
+
+/* Very small screens */
+@media (max-width: 380px) {
+  .stat { min-width: 48px !important; padding: 3px 6px !important; }
+  .stat .value { font-size: 10px !important; }
+  .cash-value { font-size: 16px !important; }
+  .speed-btn { min-width: 42px !important; padding: 0 10px !important; font-size: 12px !important; }
+  .nav-btn span { font-size: 8px !important; }
+}
