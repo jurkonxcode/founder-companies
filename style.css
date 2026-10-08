@@ -3068,3 +3068,148 @@ table td.bad { color: var(--bad); }
 }
 .ds-nav-next:hover { filter: brightness(1.06); transform: translateY(-1px); }
 .ds-nav-next svg { width: 16px; height: 16px; }
+
+/* =========================================================
+   CREATE MODAL — tile grid (Silicon Empire style)
+   ========================================================= */
+
+.ds-modal-tiles {
+  max-width: 460px;
+}
+
+@media (max-width: 900px) {
+  .ds-modal-tiles {
+    max-width: none;
+    border-radius: 22px 22px 0 0;
+    padding-bottom: var(--safe-bottom);
+  }
+}
+
+.ds-modal-tiles .modal-head {
+  padding: 20px 24px 8px;
+  border-bottom: none;
+}
+.ds-modal-tiles .modal-head h3 {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fg-0);
+}
+.ds-modal-tiles .modal-head .btn.sm {
+  width: 36px; height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--fg-2);
+  display: grid; place-items: center;
+}
+.ds-modal-tiles .modal-head .btn.sm:hover {
+  background: var(--bg-3);
+  color: var(--fg-0);
+}
+
+.ds-modal-tiles .modal-body {
+  padding: 4px 24px 28px;
+}
+
+.ds-modal-subtitle {
+  font-size: 13.5px;
+  color: var(--fg-2);
+  line-height: 1.5;
+  margin-bottom: 22px;
+}
+
+/* Section */
+.ds-tile-section {
+  margin-bottom: 20px;
+}
+.ds-tile-section:last-child {
+  margin-bottom: 0;
+}
+.ds-tile-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  margin-bottom: 12px;
+}
+
+/* Tile row */
+.ds-tile-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Individual tile */
+.ds-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  -webkit-tap-highlight-color: transparent;
+  min-width: 82px;
+  flex: 0 0 auto;
+}
+.ds-tile:hover {
+  transform: translateY(-2px);
+}
+.ds-tile:active {
+  transform: translateY(0);
+}
+
+/* Icon container — big rounded square */
+.ds-tile-icon {
+  width: 76px;
+  height: 76px;
+  border-radius: 20px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  color: var(--tile-color, var(--accent));
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 1px 2px rgba(60,50,35,0.04);
+}
+.ds-tile-icon svg {
+  width: 30px;
+  height: 30px;
+}
+.ds-tile:hover .ds-tile-icon {
+  background: color-mix(in srgb, var(--tile-color) 8%, var(--bg-2));
+  border-color: color-mix(in srgb, var(--tile-color) 30%, transparent);
+  box-shadow:
+    0 1px 2px rgba(60,50,35,0.04),
+    0 6px 18px color-mix(in srgb, var(--tile-color) 14%, transparent);
+}
+
+/* Label below */
+.ds-tile-label {
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg-1);
+  letter-spacing: -0.005em;
+  text-align: center;
+  line-height: 1.2;
+}
+.ds-tile:hover .ds-tile-label {
+  color: var(--tile-color);
+}
+
+/* Small screens */
+@media (max-width: 400px) {
+  .ds-tile { min-width: 72px; }
+  .ds-tile-icon { width: 68px; height: 68px; border-radius: 18px; }
+  .ds-tile-icon svg { width: 26px; height: 26px; }
+  .ds-tile-label { font-size: 11.5px; }
+}
