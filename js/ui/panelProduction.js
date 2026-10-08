@@ -6,24 +6,20 @@ function showProduction(focus) {
   const ready = state.projects.filter(p => p.status === 'done');
   const launched = state.products.filter(p => p.launched);
 
-  // ===== Research data =====
   const nextTech = (typeof getNextTech === 'function') ? getNextTech(state.currentNode) : null;
   const canRes = (typeof canResearchNext === 'function') ? canResearchNext(state) : { ok: false };
   const rpGain = (typeof calcRPGain === 'function') ? calcRPGain(state) : 2;
 
-  // ===== Team data =====
   const founder = state.team.find(e => e.isFounder);
   const hired = state.team.filter(e => !e.isFounder);
   const salary = hired.reduce((s, e) => s + (e.salary || 0), 0);
 
-  // ===== Factory data =====
   const tech = (typeof getTech === 'function') ? getTech(state.currentNode) : null;
   const waferCost = tech ? tech.waferCost : 0;
   const nodeYear = tech ? tech.year : 1995;
 
   setPanel('Production', `${active.length} active · ${ready.length} ready · ${launched.length} shipped`, `
 
-    <!-- ============ READY TO LAUNCH ============ -->
     ${ready.length > 0 ? `
       <div class="section-title">Ready to launch · ${ready.length}</div>
       ${ready.map(p => `
@@ -40,17 +36,14 @@ function showProduction(focus) {
       `).join('')}
     ` : ''}
 
-    <!-- ============ ACTIVE R&D ============ -->
     ${active.length > 0 ? `
       <div class="section-title">Active R&D · ${active.length}</div>
       ${active.map(p => renderActiveProjectCard(p)).join('')}
     ` : ''}
 
-    <!-- ============ PRODUCT PORTFOLIO ============ -->
     <div class="section-title">Product portfolio · ${launched.length}</div>
     ${renderPortfolio(launched)}
 
-    <!-- ============ FACTORY ============ -->
     <div class="section-title" id="prod-factory">Factory</div>
     <div class="prod-hub-card">
       <div class="prod-hub-head">
@@ -67,7 +60,6 @@ function showProduction(focus) {
       <div class="stat-row"><span class="k">TDP factor</span><span class="v">${tech ? tech.tdpFactor : 1}</span></div>
     </div>
 
-    <!-- ============ RESEARCH ============ -->
     <div class="section-title" id="prod-research">Research</div>
     <div class="prod-hub-card">
       <div class="prod-hub-head">
@@ -89,7 +81,6 @@ function showProduction(focus) {
       </button>
     </div>
 
-    <!-- ============ TEAM ============ -->
     <div class="section-title" id="prod-team">Team & Office</div>
     <div class="prod-hub-card">
       <div class="prod-hub-head">
@@ -99,28 +90,22 @@ function showProduction(focus) {
           <div class="prod-hub-sub">${hired.length} hired · ${formatMoneyShort(salary)}/turn salaries</div>
         </div>
       </div>
-      ${founder ? `
-        <div class="stat-row"><span class="k">Founder</span><span class="v">${escapeHtml(founder.name)}</span></div>
-      ` : ''}
+      ${founder ? `<div class="stat-row"><span class="k">Founder</span><span class="v">${escapeHtml(founder.name)}</span></div>` : ''}
       <div class="stat-row"><span class="k">Hired engineers</span><span class="v">${hired.length}</span></div>
       <div class="stat-row"><span class="k">Candidates waiting</span><span class="v">${state.pool.length}</span></div>
       <div class="row mt-2" style="gap:8px;flex-wrap:wrap;">
         <button class="btn primary" id="prod-team-hire">Hire & manage →</button>
       </div>
     </div>
-
   `);
 
-  // ===== Bind =====
+  // Bind
   document.querySelectorAll('[data-launch-prod]').forEach(b => {
     b.addEventListener('click', () => launchFromProduction(b.dataset.launchProd));
   });
 
   document.querySelectorAll('[data-portfolio-cat]').forEach(el => {
-    el.addEventListener('click', () => {
-      // placeholder — later: open product detail modal
-      toast('Product detail coming soon.', 'info');
-    });
+    el.addEventListener('click', () => toast('Product detail coming soon.', 'info'));
   });
 
   document.getElementById('prod-research-btn')?.addEventListener('click', () => {
@@ -137,20 +122,80 @@ function showProduction(focus) {
   });
 
   document.getElementById('prod-team-hire')?.addEventListener('click', () => {
-    if (typeof showTeam === 'function') {
-      // showTeam renders into panel body — but we're in production view
-      // Simplest: switch to team modal or leave a note
-      toast('Team management coming soon via modal.', 'info');
-    }
+    toast('Team management coming soon via modal.', 'info');
   });
 
-  // ===== Scroll to focus =====
   if (focus === 'team' || focus === 'research' || focus === 'factory') {
     setTimeout(() => {
       const el = document.getElementById('prod-' + focus);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   }
+}
+
+// =========================================================
+// ACTIVE PROJECT CARD — with duration in months
+// =========================================================
+function renderActiveProjectCard(p) {
+  const progress = (typeof calcOverallProgress === 'function') ? calcOverallProgress(p) : 0;
+  const stages = p.stages || PROJECT_STAGES;
+  const stage = stages[p.stageIndex] || { name: 'Design' };
+  const assigned = state.team.filter(e => p.engineerIds && p.engineerIds.includes(e.id));
+  const remaining = (typeof estimateRemainingTurns === 'function') ? estimateRemainingTurns(p, assigned) : 0;
+  const totalMonths = p.totalMonths || stages.reduce((s, st) => s + st.baseTurns, 0);
+  const elapsed = p.elapsedMonths || 0;
+
+  // Timeline visualization
+  const timelineHtml = stages.map((s, i) => {
+    const done = i < p.stageIndex;
+    const active = i === p.stageIndex;
+    return `
+      <div class="proj-timeline-node ${done ? 'done' : ''} ${active ? 'active' : ''}" title="${escapeHtml(s.name)} · ${s.baseTurns}mo">
+        <div class="proj-node-dot"></div>
+        <div class="proj-node-label">${escapeHtml(s.name)}</div>
+        <div class="proj-node-months">${s.baseTurns}mo</div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="card">
+      <div class="row between">
+        <h3>${iconFor(p.category)} ${escapeHtml(p.name)}</h3>
+        <span class="badge info">${stage.name}</span>
+      </div>
+      <div class="meta">${p.node} · ${(typeof getSegment === 'function' ? getSegment(p.segment)?.name : '—') || '—'} · ${assigned.length} engineer${assigned.length === 1 ? '' : 's'}</div>
+
+      <div class="progress">
+        <div class="progress-fill" style="width:${progress}%"></div>
+      </div>
+      <div class="row between" style="font-size:11px;color:var(--fg-3);font-family:var(--font-mono);">
+        <span>${progress}% · ${stage.name}</span>
+        <span>~${remaining} mo left</span>
+      </div>
+
+      <!-- Month counter -->
+      <div class="proj-month-counter">
+        <span class="pmc-elapsed">${elapsed}</span>
+        <span class="pmc-slash">/</span>
+        <span class="pmc-total">${totalMonths}</span>
+        <span class="pmc-label">months</span>
+      </div>
+
+      <!-- Stage timeline -->
+      <div class="proj-timeline">
+        ${timelineHtml}
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="stat-row"><span class="k">Target perf</span><span class="v">${p.perfScore}</span></div>
+      <div class="stat-row"><span class="k">TDP</span><span class="v">${p.tdp} W</span></div>
+      <div class="stat-row"><span class="k">Budget</span><span class="v">${formatMoneyShort(p.spent || 0)} / ${formatMoneyShort(p.designBudget || 0)}</span></div>
+
+      <button class="btn danger sm mt-2" data-cancel-prod="${p.id}">Batalkan</button>
+    </div>
+  `;
 }
 
 // =========================================================
@@ -170,18 +215,13 @@ function renderPortfolio(launched) {
     `;
   }
 
-  // Group by category
   const categories = ['cpu', 'gpu', 'laptop', 'smartphone', 'os'];
   const grouped = {};
   categories.forEach(c => grouped[c] = []);
   launched.forEach(p => {
     if (grouped[p.category]) grouped[p.category].push(p);
   });
-
-  // Sort each category by launch turn (oldest first)
-  categories.forEach(c => {
-    grouped[c].sort((a, b) => (a.launchTurn || 0) - (b.launchTurn || 0));
-  });
+  categories.forEach(c => grouped[c].sort((a, b) => (a.launchTurn || 0) - (b.launchTurn || 0)));
 
   const blocks = categories.map(cat => {
     const items = grouped[cat];
@@ -189,7 +229,6 @@ function renderPortfolio(launched) {
     return renderPortfolioCategory(cat, items);
   }).filter(Boolean).join('');
 
-  // Handle any unknown categories gracefully
   const knownCats = new Set(categories);
   const orphans = launched.filter(p => !knownCats.has(p.category));
   const orphanBlock = orphans.length > 0 ? renderPortfolioCategory(orphans[0].category, orphans) : '';
@@ -200,17 +239,10 @@ function renderPortfolio(launched) {
 function renderPortfolioCategory(cat, items) {
   const catInfo = (typeof getCategory === 'function') ? getCategory(cat) : { name: cat };
   const isOS = cat === 'os';
-
-  // Node progression string
   const nodes = items.map(p => p.node);
-  const progression = nodes.join('  →  ');
-
-  // Head summary
   const countLabel = isOS
     ? `${items.length} version${items.length === 1 ? '' : 's'}`
     : `${items.length} product${items.length === 1 ? '' : 's'}`;
-
-  // First vs latest node for progress indicator
   const firstNode = nodes[0];
   const lastNode = nodes[nodes.length - 1];
   const nodeMoved = nodes.length > 1 && firstNode !== lastNode;
@@ -251,60 +283,17 @@ function renderPortfolioCard(p, cat, isOS) {
   const rank = state.products.filter(x => x.launched && x.category === cat)
     .sort((a, b) => (a.launchTurn || 0) - (b.launchTurn || 0))
     .findIndex(x => x.id === p.id) + 1;
-
   const versionLabel = isOS ? `v${rank}` : `#${rank}`;
 
   return `
     <div class="portfolio-card" data-portfolio-cat="${cat}">
-      <div class="portfolio-version" style="background:${catColor}20;color:${catColor}">
-        ${versionLabel}
-      </div>
-      <div class="portfolio-art">
-        ${typeof renderBoxArt === 'function' ? renderBoxArt(p) : ''}
-      </div>
+      <div class="portfolio-version" style="background:${catColor}20;color:${catColor}">${versionLabel}</div>
+      <div class="portfolio-art">${typeof renderBoxArt === 'function' ? renderBoxArt(p) : ''}</div>
       <div class="portfolio-name">${escapeHtml(p.name)}</div>
       <div class="portfolio-meta">
-        <span>${p.node}</span>
-        <span>·</span>
-        <span>${p.perfScore} pts</span>
+        <span>${p.node}</span><span>·</span><span>${p.perfScore} pts</span>
       </div>
       <div class="portfolio-price">${formatMoneyShort(p.revenue || 0)}</div>
-    </div>
-  `;
-}
-
-// =========================================================
-// ACTIVE PROJECT CARD
-// =========================================================
-function renderActiveProjectCard(p) {
-  const progress = (typeof calcOverallProgress === 'function') ? calcOverallProgress(p) : 0;
-  const stage = PROJECT_STAGES[p.stageIndex] || { name: 'Design' };
-  const assigned = state.team.filter(e => p.engineerIds && p.engineerIds.includes(e.id));
-  const remaining = (typeof estimateRemainingTurns === 'function') ? estimateRemainingTurns(p, assigned) : 0;
-
-  return `
-    <div class="card">
-      <div class="row between">
-        <h3>${iconFor(p.category)} ${escapeHtml(p.name)}</h3>
-        <span class="badge info">${stage.name}</span>
-      </div>
-      <div class="meta">${p.node} · ${(typeof getSegment === 'function' ? getSegment(p.segment)?.name : '—') || '—'} · ${assigned.length} engineer${assigned.length === 1 ? '' : 's'}</div>
-
-      <div class="progress">
-        <div class="progress-fill" style="width:${progress}%"></div>
-      </div>
-      <div class="row between" style="font-size:11px;color:var(--fg-3);font-family:var(--font-mono);">
-        <span>${progress}% · ${stage.name}</span>
-        <span>~${remaining} turn${remaining === 1 ? '' : 's'} left</span>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="stat-row"><span class="k">Target perf</span><span class="v">${p.perfScore}</span></div>
-      <div class="stat-row"><span class="k">TDP</span><span class="v">${p.tdp} W</span></div>
-      <div class="stat-row"><span class="k">Budget</span><span class="v">${formatMoneyShort(p.spent || 0)} / ${formatMoneyShort(p.designBudget || 0)}</span></div>
-
-      <button class="btn danger sm mt-2" data-cancel-prod="${p.id}">Batalkan</button>
     </div>
   `;
 }
@@ -313,9 +302,7 @@ function renderActiveProjectCard(p) {
 // LAUNCH / CANCEL
 // =========================================================
 function launchFromProduction(projectId) {
-  if (typeof launchProduct === 'function') {
-    return launchProduct(projectId);
-  }
+  if (typeof launchProduct === 'function') return launchProduct(projectId);
   const p = state.projects.find(x => x.id === projectId);
   if (!p) return;
   p.status = 'launched';
@@ -338,12 +325,9 @@ document.addEventListener('click', (e) => {
   showProduction();
 });
 
-// =========================================================
-// Icon helper (duplicate-safe)
-// =========================================================
 if (typeof iconFor !== 'function') {
   window.iconFor = function(cat) {
     const colors = { cpu:'#c9542a', gpu:'#7a5ba8', os:'#3d8b5f', laptop:'#b8852b', smartphone:'#c47a2e' };
     return `<svg viewBox="0 0 24 24" fill="none" stroke="${colors[cat] || '#7d8590'}" stroke-width="2" width="14" height="14"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>`;
   };
-}
+                                }
