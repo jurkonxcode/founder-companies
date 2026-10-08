@@ -1,44 +1,43 @@
 // js/systems/research.js
-// Tech tree unlock dan gain RP.
+// Tech tree unlock and RP accumulation.
+// Research grows automatically each turn based on engineers and progress.
 
 // ===== RP gain per turn =====
-// Basis dari lab riset + bonus dari engineer process
+// Base: 2 RP. +2 RP per hired engineer. +bonus from process specialists.
+// +market share contribution. +archetype multiplier.
 function calcRPGain(state) {
-  let base = 3;
+  let base = 2;
+  base += state.team.length * 2;
 
-  // Bonus dari jumlah engineer
-  base += Math.floor(state.team.length * 0.5);
-
-  // Bonus dari engineer spesialis process
   const processEngs = state.team.filter(e => e.specialty === 'process');
   for (const eng of processEngs) {
     const lv = getLevelInfo(eng.level);
-    base += lv.effectMult * 1.5;
+    base += lv.effectMult * 3;
   }
 
-  // Bonus dari market share (semakin besar, semakin banyak resource untuk riset)
-  base += state.marketShare * 20;
+  base += state.marketShare * 10;
 
-  return Math.round(base);
+  return Math.round(base * archBonus('rpGain'));
 }
 
-// ===== Cek bisa riset node berikutnya =====
+// ===== Check if next node is researchable =====
 function canResearchNext(state) {
   const next = getNextTech(state.currentNode);
-  if (!next) return { ok: false, reason: 'Node sudah paling canggih' };
+  if (!next) return { ok: false, reason: 'Already at the latest node' };
   if (state.tahun < next.year) {
-    return { ok: false, reason: `Tersedia tahun ${next.year}` };
+    return { ok: false, reason: `Available in ${next.year}` };
   }
+  const cost = Math.round(next.cost * archBonus('nodeCost'));
   if (state.researchPoint < next.rp) {
-    return { ok: false, reason: `Butuh ${next.rp} RP` };
+    return { ok: false, reason: `Need ${next.rp} RP` };
   }
-  if (state.uang < next.cost) {
-    return { ok: false, reason: `Butuh ${formatMoneyShort(next.cost)}` };
+  if (state.uang < cost) {
+    return { ok: false, reason: `Need ${formatMoneyShort(cost)}` };
   }
-  return { ok: true, next };
+  return { ok: true, next: { ...next, cost, originalCost: next.cost } };
 }
 
-// ===== Lakukan riset =====
+// ===== Perform research =====
 function performResearch(state) {
   const check = canResearchNext(state);
   if (!check.ok) return { success: false, reason: check.reason };
@@ -50,6 +49,5 @@ function performResearch(state) {
   if (!state.unlockedNodes.includes(next.id)) {
     state.unlockedNodes.push(next.id);
   }
-
   return { success: true, tech: next };
 }
