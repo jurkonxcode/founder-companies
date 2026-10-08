@@ -219,7 +219,17 @@
     </div>
   </header>
 
-  <main id="layout">
+<!-- Speed control bar -->
+<div id="speed-bar">
+  <button class="speed-btn" data-speed="0" title="Pause">
+    <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+  </button>
+  <button class="speed-btn" data-speed="1" title="Normal speed">1×</button>
+  <button class="speed-btn" data-speed="2" title="Fast">2×</button>
+  <button class="speed-btn" data-speed="4" title="Very fast">4×</button>
+</div>
+
+<main id="layout">
     <nav id="nav">
       <button class="nav-btn active" data-panel="dashboard">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
