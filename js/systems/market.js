@@ -165,3 +165,104 @@ function calcPassiveIncome(state) {
   }
   return Math.round(total);
 }
+// =========================================================
+// PUBLIC RATING — how the market perceives a launched product
+// =========================================================
+// Rating 0–100 dengan tier S/A/B/C/D
+// Dipengaruhi oleh: segment fit, value (perf/price), TDP, features.
+// Deterministic per product (berdasarkan ID) supaya konsisten saat reload.
+
+function computePublicRating(product, state) {
+  const segment = (typeof getSegment === 'function') ? getSegment(product.segment) : null;
+  if (!segment) return { score: 50, tier: 'B', verdict: 'Unknown' };
+
+  // 1. Segment fit (0–100)
+  const fit = (typeof calcSegmentFit === 'function')
+    ? calcSegmentFit(segment, {
+        perfScore: product.perfScore,
+        tdp: product.tdp,
+        price: product.price,
+        featureScore: product.featureScore,
+      }) * 100
+    : 50;
+
+  // 2. Value: perf per dollar vs segment sweet spot
+  const expectedPerfPerPrice = Math.max(0.5, segment.priceSweet / 100);
+  const actualPerfPerPrice = product.perfScore / Math.max(1, product.price);
+  const valueRatio = actualPerfPerPrice / expectedPerfPerPrice;
+  const valueScore = Math.max(0, Math.min(100, 40 + (valueRatio - 1) * 70));
+
+  // 3. Feature completeness
+  const featureScore = Math.max(0, Math.min(100, product.featureScore || 50));
+
+  // 4. TDP penalty vs segment priority
+  let tdpScore = 100;
+  const tdpSensitivity = segment.tdpWeight || 0.15;
+  if (tdpSensitivity > 0.25 && product.tdp > 40) {
+    tdpScore = Math.max(0, 100 - (product.tdp - 40) * (1.8 * tdpSensitivity));
+  } else if (product.tdp > 120) {
+    tdpScore = Math.max(0, 100 - (product.tdp - 120) * 0.8);
+  }
+
+  // 5. Timing bonus: rilis lebih awal di segmen = lebih fresh
+  const yearsInSegment = Math.max(0, state.tahun - (segment.year || 1995));
+  const timingBonus = Math.min(8, yearsInSegment * 0.4);
+
+  // Weighted composite
+  const composite =
+    fit         * 0.35 +
+    valueScore  * 0.35 +
+    featureScore* 0.15 +
+    tdpScore    * 0.15 +
+    timingBonus;
+
+  // Deterministic per-product noise (public opinion isn't fully rational)
+  const seed = String(product.id || 'x')
+    .split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const noise = ((seed % 11) - 5); // -5 to +5
+
+  const score = Math.max(0, Math.min(100, Math.round(composite + noise)));
+
+  // Tier
+  let tier, tierLabel;
+  if (score >= 90)      { tier = 'S'; tierLabel = 'Legendary'; }
+  else if (score >= 75) { tier = 'A'; tierLabel = 'Excellent'; }
+  else if (score >= 60) { tier = 'B'; tierLabel = 'Good'; }
+  else if (score >= 40) { tier = 'C'; tierLabel = 'Mixed'; }
+  else                  { tier = 'D'; tierLabel = 'Flop'; }
+
+  // Verdict — pilih narasi berdasarkan dimensi terlemah
+  let verdict = tierLabel;
+  const dims = [
+    { key: 'value',      score: valueScore,   low: 'Overpriced',      good: 'Great value' },
+    { key: 'fit',        score: fit,          low: 'Off-target',      good: 'Perfect fit' },
+    { key: 'tdp',        score: tdpScore,     low: 'Too hot',         good: 'Efficient' },
+    { key: 'feature',    score: featureScore, low: 'Feature-poor',    good: 'Feature-rich' },
+  ];
+  const weakest = dims.reduce((a, b) => a.score < b.score ? a : b);
+  const strongest = dims.reduce((a, b) => a.score > b.score ? a : b);
+
+  if (score >= 75)      verdict = strongest.good;
+  else if (score >= 55) verdict = 'Solid';
+  else if (score < 35)  verdict = weakest.low;
+  else                  verdict = 'Mixed reception';
+
+  return { score, tier, tierLabel, verdict };
+}
+
+function getRatingTierColor(tier) {
+  return ({
+    S: '#c9542a',
+    A: '#3d8b5f',
+    B: '#2e8391',
+    C: '#b8852b',
+    D: '#b83333',
+  })[tier] || '#786d5b';
+}
+
+// Average rating across all launched products
+function calcAverageRating(launched) {
+  if (!launched || launched.length === 0) return 0;
+  const total = launched.reduce((s, p) => s + (computePublicRating(p, state).score), 0);
+  return Math.round(total / launched.length);
+}
