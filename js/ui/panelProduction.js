@@ -1,5 +1,5 @@
 // js/ui/panelProduction.js
-// Production hub — Active R&D, Product Portfolio, Factory, Research, Team.
+// Production hub — Active R&D, Product History (with public ratings), Factory, Research, Team.
 
 function showProduction(focus) {
   const active = state.projects.filter(p => p.status === 'active');
@@ -18,6 +18,8 @@ function showProduction(focus) {
   const waferCost = tech ? tech.waferCost : 0;
   const nodeYear = tech ? tech.year : 1995;
 
+  const avgRating = (typeof calcAverageRating === 'function') ? calcAverageRating(launched) : 0;
+
   setPanel('Production', `${active.length} active · ${ready.length} ready · ${launched.length} shipped`, `
 
     ${ready.length > 0 ? `
@@ -29,8 +31,7 @@ function showProduction(focus) {
             <span class="badge good">READY</span>
           </div>
           <div class="meta">${p.node} · PERF ${p.perfScore} · TDP ${p.tdp}W · $${p.price}</div>
-          <div class="stat-row"><span class="k">Unit cost</span><span class="v">${formatMoney(p.unitCost)}</span></div>
-          <div class="stat-row"><span class="k">Margin</span><span class="v ${p.price - p.unitCost > 0 ? 'good' : 'bad'}">${formatMoney(p.price - p.unitCost)}</span></div>
+          ${renderRatingPreview(p)}
           <button class="btn good lg mt-2" data-launch-prod="${p.id}">Luncurkan ke Pasar</button>
         </div>
       `).join('')}
@@ -41,8 +42,11 @@ function showProduction(focus) {
       ${active.map(p => renderActiveProjectCard(p)).join('')}
     ` : ''}
 
-    <div class="section-title">Product portfolio · ${launched.length}</div>
-    ${renderPortfolio(launched)}
+    <div class="section-title">
+      Product history · ${launched.length}
+      ${launched.length > 0 ? `<span class="avg-rating-chip">avg ${avgRating}</span>` : ''}
+    </div>
+    ${renderProductHistory(launched)}
 
     <div class="section-title" id="prod-factory">Factory</div>
     <div class="prod-hub-card">
@@ -105,7 +109,12 @@ function showProduction(focus) {
   });
 
   document.querySelectorAll('[data-portfolio-cat]').forEach(el => {
-    el.addEventListener('click', () => toast('Product detail coming soon.', 'info'));
+    el.addEventListener('click', () => {
+      const id = el.dataset.portfolioId;
+      const p = state.products.find(x => x.id === id);
+      if (p && typeof openProductDetail === 'function') openProductDetail(p);
+      else toast('Product detail coming soon.', 'info');
+    });
   });
 
   document.getElementById('prod-research-btn')?.addEventListener('click', () => {
@@ -134,7 +143,144 @@ function showProduction(focus) {
 }
 
 // =========================================================
-// ACTIVE PROJECT CARD — with duration in months
+// RATING PREVIEW — shown before launching
+// =========================================================
+function renderRatingPreview(p) {
+  if (typeof computePublicRating !== 'function') return '';
+  const r = computePublicRating(p, state);
+  const color = (typeof getRatingTierColor === 'function') ? getRatingTierColor(r.tier) : '#c9542a';
+  return `
+    <div class="rating-preview">
+      <div class="rating-tier" style="background:${color}20;color:${color}">${r.tier}</div>
+      <div class="rating-body">
+        <div class="rating-line">
+          <span class="rating-score">${r.score}<span class="rating-denom">/100</span></span>
+          <span class="rating-verdict" style="color:${color}">${escapeHtml(r.verdict)}</span>
+        </div>
+        <div class="rating-note">Projected public reception</div>
+      </div>
+    </div>
+  `;
+}
+
+// =========================================================
+// PRODUCT HISTORY
+// =========================================================
+function renderProductHistory(launched) {
+  if (launched.length === 0) {
+    return `
+      <div class="portfolio-empty">
+        <div class="portfolio-empty-icon">📦</div>
+        <div class="portfolio-empty-title">No products shipped yet</div>
+        <div class="portfolio-empty-desc">Design and launch your first chip to build a product history.</div>
+        <button class="btn primary" onclick="if(typeof openDesignerCategoryChooser==='function')openDesignerCategoryChooser()">
+          Open Designer
+        </button>
+      </div>
+    `;
+  }
+
+  const categories = ['cpu', 'gpu', 'laptop', 'smartphone', 'os'];
+  const grouped = {};
+  categories.forEach(c => grouped[c] = []);
+  launched.forEach(p => {
+    if (grouped[p.category]) grouped[p.category].push(p);
+  });
+  categories.forEach(c => grouped[c].sort((a, b) => (a.launchTurn || 0) - (b.launchTurn || 0)));
+
+  const blocks = categories.map(cat => {
+    const items = grouped[cat];
+    if (items.length === 0) return '';
+    return renderHistoryCategory(cat, items);
+  }).filter(Boolean).join('');
+
+  const knownCats = new Set(categories);
+  const orphans = launched.filter(p => !knownCats.has(p.category));
+  const orphanBlock = orphans.length > 0 ? renderHistoryCategory(orphans[0].category, orphans) : '';
+
+  return `<div class="portfolio-wrap">${blocks}${orphanBlock}</div>`;
+}
+
+function renderHistoryCategory(cat, items) {
+  const catInfo = (typeof getCategory === 'function') ? getCategory(cat) : { name: cat };
+  const isOS = cat === 'os';
+  const nodes = items.map(p => p.node);
+  const countLabel = isOS
+    ? `${items.length} version${items.length === 1 ? '' : 's'}`
+    : `${items.length} product${items.length === 1 ? '' : 's'}`;
+  const firstNode = nodes[0];
+  const lastNode = nodes[nodes.length - 1];
+  const nodeMoved = nodes.length > 1 && firstNode !== lastNode;
+
+  // Average rating for this category
+  const avgScore = items.length > 0
+    ? Math.round(items.reduce((s, p) => s + computePublicRating(p, state).score, 0) / items.length)
+    : 0;
+
+  return `
+    <div class="portfolio-category">
+      <div class="portfolio-head">
+        <div class="portfolio-cat-name">
+          ${iconFor(cat)}
+          <span>${escapeHtml(catInfo.name)}</span>
+        </div>
+        <div class="portfolio-cat-count">${countLabel} · avg ${avgScore}</div>
+      </div>
+
+      ${nodeMoved ? `
+        <div class="portfolio-progression">
+          <span class="pp-from">${escapeHtml(firstNode)}</span>
+          <span class="pp-arrow">→</span>
+          <span class="pp-to">${escapeHtml(lastNode)}</span>
+          <span class="pp-label">node shrink ${items.length - 1}×</span>
+        </div>
+      ` : nodes.length === 1 ? `
+        <div class="portfolio-progression">
+          <span class="pp-from">${escapeHtml(firstNode)}</span>
+          <span class="pp-label">initial node</span>
+        </div>
+      ` : ''}
+
+      <div class="portfolio-scroll">
+        ${items.map(p => renderHistoryCard(p, cat, isOS)).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderHistoryCard(p, cat, isOS) {
+  const catColor = (typeof categoryColor === 'function') ? categoryColor(cat) : '#c9542a';
+  const rank = state.products.filter(x => x.launched && x.category === cat)
+    .sort((a, b) => (a.launchTurn || 0) - (b.launchTurn || 0))
+    .findIndex(x => x.id === p.id) + 1;
+  const versionLabel = isOS ? `v${rank}` : `#${rank}`;
+
+  const rating = computePublicRating(p, state);
+  const tierColor = getRatingTierColor(rating.tier);
+
+  return `
+    <div class="portfolio-card" data-portfolio-cat="${cat}" data-portfolio-id="${p.id}">
+      <div class="portfolio-version" style="background:${catColor}20;color:${catColor}">${versionLabel}</div>
+      <div class="portfolio-tier" style="background:${tierColor}20;color:${tierColor}">${rating.tier}</div>
+
+      <div class="portfolio-art">${typeof renderBoxArt === 'function' ? renderBoxArt(p) : ''}</div>
+      <div class="portfolio-name">${escapeHtml(p.name)}</div>
+      <div class="portfolio-meta">
+        <span>${p.node}</span><span>·</span><span>${p.perfScore} pts</span>
+      </div>
+
+      <div class="portfolio-rating">
+        <span class="pr-score" style="color:${tierColor}">${rating.score}</span>
+        <span class="pr-verdict">${escapeHtml(rating.verdict)}</span>
+      </div>
+
+      <div class="portfolio-price">${formatMoneyShort(p.revenue || 0)}</div>
+    </div>
+  `;
+}
+
+// =========================================================
+// ACTIVE PROJECT CARD
 // =========================================================
 function renderActiveProjectCard(p) {
   const progress = (typeof calcOverallProgress === 'function') ? calcOverallProgress(p) : 0;
@@ -145,7 +291,6 @@ function renderActiveProjectCard(p) {
   const totalMonths = p.totalMonths || stages.reduce((s, st) => s + st.baseTurns, 0);
   const elapsed = p.elapsedMonths || 0;
 
-  // Timeline visualization
   const timelineHtml = stages.map((s, i) => {
     const done = i < p.stageIndex;
     const active = i === p.stageIndex;
@@ -174,7 +319,6 @@ function renderActiveProjectCard(p) {
         <span>~${remaining} mo left</span>
       </div>
 
-      <!-- Month counter -->
       <div class="proj-month-counter">
         <span class="pmc-elapsed">${elapsed}</span>
         <span class="pmc-slash">/</span>
@@ -182,7 +326,6 @@ function renderActiveProjectCard(p) {
         <span class="pmc-label">months</span>
       </div>
 
-      <!-- Stage timeline -->
       <div class="proj-timeline">
         ${timelineHtml}
       </div>
@@ -194,106 +337,6 @@ function renderActiveProjectCard(p) {
       <div class="stat-row"><span class="k">Budget</span><span class="v">${formatMoneyShort(p.spent || 0)} / ${formatMoneyShort(p.designBudget || 0)}</span></div>
 
       <button class="btn danger sm mt-2" data-cancel-prod="${p.id}">Batalkan</button>
-    </div>
-  `;
-}
-
-// =========================================================
-// PORTFOLIO
-// =========================================================
-function renderPortfolio(launched) {
-  if (launched.length === 0) {
-    return `
-      <div class="portfolio-empty">
-        <div class="portfolio-empty-icon">📦</div>
-        <div class="portfolio-empty-title">No products shipped yet</div>
-        <div class="portfolio-empty-desc">Design and launch your first chip to build a product history.</div>
-        <button class="btn primary" onclick="if(typeof openDesignerCategoryChooser==='function')openDesignerCategoryChooser()">
-          Open Designer
-        </button>
-      </div>
-    `;
-  }
-
-  const categories = ['cpu', 'gpu', 'laptop', 'smartphone', 'os'];
-  const grouped = {};
-  categories.forEach(c => grouped[c] = []);
-  launched.forEach(p => {
-    if (grouped[p.category]) grouped[p.category].push(p);
-  });
-  categories.forEach(c => grouped[c].sort((a, b) => (a.launchTurn || 0) - (b.launchTurn || 0)));
-
-  const blocks = categories.map(cat => {
-    const items = grouped[cat];
-    if (items.length === 0) return '';
-    return renderPortfolioCategory(cat, items);
-  }).filter(Boolean).join('');
-
-  const knownCats = new Set(categories);
-  const orphans = launched.filter(p => !knownCats.has(p.category));
-  const orphanBlock = orphans.length > 0 ? renderPortfolioCategory(orphans[0].category, orphans) : '';
-
-  return `<div class="portfolio-wrap">${blocks}${orphanBlock}</div>`;
-}
-
-function renderPortfolioCategory(cat, items) {
-  const catInfo = (typeof getCategory === 'function') ? getCategory(cat) : { name: cat };
-  const isOS = cat === 'os';
-  const nodes = items.map(p => p.node);
-  const countLabel = isOS
-    ? `${items.length} version${items.length === 1 ? '' : 's'}`
-    : `${items.length} product${items.length === 1 ? '' : 's'}`;
-  const firstNode = nodes[0];
-  const lastNode = nodes[nodes.length - 1];
-  const nodeMoved = nodes.length > 1 && firstNode !== lastNode;
-
-  return `
-    <div class="portfolio-category">
-      <div class="portfolio-head">
-        <div class="portfolio-cat-name">
-          ${iconFor(cat)}
-          <span>${escapeHtml(catInfo.name)}</span>
-        </div>
-        <div class="portfolio-cat-count">${countLabel}</div>
-      </div>
-
-      ${nodeMoved ? `
-        <div class="portfolio-progression">
-          <span class="pp-from">${escapeHtml(firstNode)}</span>
-          <span class="pp-arrow">→</span>
-          <span class="pp-to">${escapeHtml(lastNode)}</span>
-          <span class="pp-label">node shrink ${items.length - 1}×</span>
-        </div>
-      ` : nodes.length === 1 ? `
-        <div class="portfolio-progression">
-          <span class="pp-from">${escapeHtml(firstNode)}</span>
-          <span class="pp-label">initial node</span>
-        </div>
-      ` : ''}
-
-      <div class="portfolio-scroll">
-        ${items.map(p => renderPortfolioCard(p, cat, isOS)).join('')}
-      </div>
-    </div>
-  `;
-}
-
-function renderPortfolioCard(p, cat, isOS) {
-  const catColor = (typeof categoryColor === 'function') ? categoryColor(cat) : '#c9542a';
-  const rank = state.products.filter(x => x.launched && x.category === cat)
-    .sort((a, b) => (a.launchTurn || 0) - (b.launchTurn || 0))
-    .findIndex(x => x.id === p.id) + 1;
-  const versionLabel = isOS ? `v${rank}` : `#${rank}`;
-
-  return `
-    <div class="portfolio-card" data-portfolio-cat="${cat}">
-      <div class="portfolio-version" style="background:${catColor}20;color:${catColor}">${versionLabel}</div>
-      <div class="portfolio-art">${typeof renderBoxArt === 'function' ? renderBoxArt(p) : ''}</div>
-      <div class="portfolio-name">${escapeHtml(p.name)}</div>
-      <div class="portfolio-meta">
-        <span>${p.node}</span><span>·</span><span>${p.perfScore} pts</span>
-      </div>
-      <div class="portfolio-price">${formatMoneyShort(p.revenue || 0)}</div>
     </div>
   `;
 }
@@ -330,4 +373,4 @@ if (typeof iconFor !== 'function') {
     const colors = { cpu:'#c9542a', gpu:'#7a5ba8', os:'#3d8b5f', laptop:'#b8852b', smartphone:'#c47a2e' };
     return `<svg viewBox="0 0 24 24" fill="none" stroke="${colors[cat] || '#7d8590'}" stroke-width="2" width="14" height="14"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>`;
   };
-                                }
+                                     }
