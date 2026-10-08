@@ -1623,3 +1623,76 @@ table td.bad  { color: var(--bad); }
   #panel-body { padding: 12px 14px 90px; }
   #btn-next-turn { bottom: calc(112px + env(safe-area-inset-bottom, 0)); }
    }
+/* =========================================================
+   SPEED BAR (⏸ 1× 2× 4×)
+   ========================================================= */
+:root {
+  --speedbar-h: 44px;
+}
+
+#app {
+  grid-template-rows: var(--topbar-h) var(--speedbar-h) 1fr var(--bottombar-h);
+}
+
+#speed-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 16px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--line);
+  height: var(--speedbar-h);
+  flex-shrink: 0;
+}
+
+.speed-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  height: 32px;
+  padding: 0 14px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--fg-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+.speed-btn svg { width: 14px; height: 14px; }
+.speed-btn:hover {
+  color: var(--fg-0);
+  background: var(--bg-3);
+}
+.speed-btn.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.speed-btn.active:hover {
+  filter: brightness(1.08);
+}
+
+/* Mobile tweaks */
+@media (max-width: 820px) {
+  :root {
+    --speedbar-h: 40px;
+  }
+  #speed-bar {
+    padding: 0 10px;
+    gap: 2px;
+  }
+  .speed-btn {
+    min-width: 48px;
+    height: 30px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+}
