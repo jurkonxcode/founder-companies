@@ -1431,3 +1431,120 @@ table td.bad  { color: var(--bad); }
     animation: chargePulse 1.8s ease-in-out infinite;
   }
 }
+/* =========================================================
+   BOTTOM NAV V2 — pill behind active icon
+   ========================================================= */
+@media (max-width: 900px) {
+
+  #nav {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    background: var(--bg-2);
+    border-top: 1px solid var(--line);
+    box-shadow:
+      0 -1px 0 rgba(60,50,35,0.04),
+      0 -8px 24px rgba(60,50,35,0.05);
+    padding: 0;
+    height: var(--nav-h);
+    position: relative;
+    z-index: 20;
+  }
+
+  .nav-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 2px 8px;
+    background: transparent;
+    border: none !important;
+    border-radius: 0;
+    color: var(--fg-3);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    position: relative;
+    transition: color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    overflow: visible;
+  }
+
+  /* Icon gets the pill treatment */
+  .nav-btn svg {
+    width: 20px;
+    height: 20px;
+    padding: 7px;
+    box-sizing: content-box;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--fg-3);
+    transition:
+      background 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+      color 0.22s ease,
+      transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .nav-btn span {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
+    transition: color 0.2s, font-weight 0.2s;
+  }
+
+  /* Tap feedback */
+  .nav-btn:active svg {
+    transform: scale(0.9);
+  }
+
+  /* Hover (some Android browsers) */
+  .nav-btn:hover { color: var(--fg-1); }
+  .nav-btn:hover svg { color: var(--fg-1); }
+
+  /* Active: soft pill behind icon + accent color + tiny lift */
+  .nav-btn.active {
+    color: var(--accent);
+    background: transparent;
+    border: none !important;
+    border-top: none !important;
+  }
+  .nav-btn.active svg {
+    background: var(--accent-soft);
+    color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .nav-btn.active span {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* Badge dot — repositioned to top-right of the icon pill */
+  .nav-btn .badge-dot {
+    position: absolute;
+    top: 6px;
+    right: calc(50% - 20px);
+    width: 7px;
+    height: 7px;
+    background: var(--warn);
+    border: 2px solid var(--bg-2);
+    border-radius: 50%;
+    box-shadow: none;
+    animation: badgePulse 2s ease-in-out infinite;
+  }
+
+  @keyframes badgePulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%      { transform: scale(1.2); opacity: 0.85; }
+  }
+
+  /* Kill old underline styles that might still apply */
+  .nav-btn.active::before,
+  .nav-btn.active::after {
+    display: none !important;
+  }
+}
