@@ -15,9 +15,6 @@
   })();
 </script>
 <style>
-/* =========================================================
-   PROFILE MENU — inline (isolated from style.css)
-   ========================================================= */
 .profile-menu-section { margin-bottom: 22px; }
 .profile-menu-title {
   font-family: var(--font-mono, monospace);
@@ -26,47 +23,25 @@
   color: var(--fg-3, #9a9184);
   margin-bottom: 12px; padding-left: 4px;
 }
-.profile-tile-grid {
-  display: grid !important;
-  grid-template-columns: repeat(3, 1fr) !important;
-  gap: 10px;
-}
+.profile-tile-grid { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 10px; }
 .profile-tile {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  gap: 8px !important;
-  padding: 16px 8px 12px !important;
+  display: flex !important; flex-direction: column !important; align-items: center !important;
+  gap: 8px !important; padding: 16px 8px 12px !important;
   background: var(--bg-2, #fbf8f0) !important;
   border: 1px solid var(--line, #e5ddcc) !important;
   border-radius: 14px !important;
-  cursor: pointer;
-  text-align: center;
-  font-family: inherit;
-  color: inherit;
-  appearance: none;
-  -webkit-appearance: none;
+  cursor: pointer; text-align: center; font-family: inherit; color: inherit;
+  appearance: none; -webkit-appearance: none;
 }
 .profile-tile-icon {
-  width: 52px; height: 52px;
-  border-radius: 14px;
+  width: 52px; height: 52px; border-radius: 14px;
   background: var(--bg-3, #ebe4d3);
   display: grid; place-items: center;
-  color: var(--tile-color, #c9542a);
-  flex-shrink: 0;
+  color: var(--tile-color, #c9542a); flex-shrink: 0;
 }
 .profile-tile-icon svg { width: 22px !important; height: 22px !important; stroke: currentColor !important; }
-.profile-tile-label {
-  font-size: 12px !important; font-weight: 700 !important;
-  color: var(--fg-0, #2b2620) !important;
-  line-height: 1.15;
-}
-.profile-tile-sub {
-  font-family: monospace !important;
-  font-size: 9.5px !important;
-  color: var(--fg-3, #9a9184) !important;
-  margin-top: -4px;
-}
+.profile-tile-label { font-size: 12px !important; font-weight: 700 !important; color: var(--fg-0, #2b2620) !important; line-height: 1.15; }
+.profile-tile-sub { font-family: monospace !important; font-size: 9.5px !important; color: var(--fg-3, #9a9184) !important; margin-top: -4px; }
 .profile-sub-head {
   display: flex; align-items: center; gap: 12px;
   padding: 18px 18px 16px;
@@ -235,7 +210,8 @@
     </aside>
   </main>
 
-  <nav id="nav">
+  <!-- BOTTOM NAV — 4 TABS -->
+  <nav id="nav" class="nav-4">
     <button class="nav-btn active" data-panel="dashboard">
       <div class="nav-icon">
         <svg class="nav-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>
@@ -260,20 +236,12 @@
       <span>Production</span>
     </button>
 
-    <button class="nav-btn" data-panel="team">
+    <button class="nav-btn" id="nav-market">
       <div class="nav-icon">
-        <svg class="nav-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20v-1.5a4.5 4.5 0 0 1 4.5-4.5h2a4.5 4.5 0 0 1 4.5 4.5V20"/><path d="M16 4.2a3.2 3.2 0 0 1 0 6.4"/><path d="M20.5 20v-1.5a4.5 4.5 0 0 0-3.5-4.4"/></svg>
-        <svg class="nav-fill" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3.5"/><path d="M9 13.5c-3.04 0-5.5 2.46-5.5 5.5v1a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5v-1c0-3.04-2.46-5.5-5.5-5.5z"/><circle cx="17" cy="7.5" r="2.5"/><path d="M17 11c-2.2 0-4 1.35-4 3v1h7.5a.5.5 0 0 0 .5-.5v-.5c0-1.65-1.8-3-4-3z"/></svg>
+        <svg class="nav-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20h17"/><path d="M6 20V10.5M10.5 20V6M15 20V13M19.5 20V8"/></svg>
+        <svg class="nav-fill" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="10" width="3" height="10" rx="1"/><rect x="9.5" y="5" width="3" height="15" rx="1"/><rect x="14" y="12.5" width="3" height="7.5" rx="1"/><rect x="18.5" y="7.5" width="3" height="12.5" rx="1"/></svg>
       </div>
-      <span>Team</span>
-    </button>
-
-    <button class="nav-btn" data-panel="research">
-      <div class="nav-icon">
-        <svg class="nav-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20.5 20.5-4-4"/></svg>
-        <svg class="nav-fill" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M11 4.5a6.5 6.5 0 1 0 4.02 11.6l3.94 3.94a1 1 0 0 0 1.42-1.42l-3.94-3.94A6.5 6.5 0 0 0 11 4.5zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z"/></svg>
-      </div>
-      <span>Research</span>
+      <span>Market</span>
     </button>
   </nav>
 
@@ -293,6 +261,7 @@
   </footer>
 
   <div id="profile-modal"></div>
+  <div id="market-modal"></div>
 
   <div id="news-drawer" class="news-drawer">
     <div class="news-drawer-head"><h3>News Feed</h3><button class="news-drawer-close" id="news-drawer-close">✕</button></div>
@@ -320,42 +289,17 @@
   (function () {
     var V = window.__FC_VERSION__ || Date.now();
     var scripts = [
-      // Data
-      'js/data/tech.js',
-      'js/data/isa.js',
-      'js/data/engineers.js',
-      'js/data/segments.js',
-      'js/data/competitors.js',
-      'js/data/events.js',
-      'js/data/archetypes.js',
-      'js/data/difficulties.js',
-      'js/data/designer-config.js',
-      'js/data/tech-evolution.js',
-      'js/data/headlines.js',
-      // Systems
-      'js/systems/chipDesign.js',
-      'js/systems/production.js',
-      'js/systems/team.js',
-      'js/systems/research.js',
-      'js/systems/market.js',
-      'js/systems/finance.js',
-      // State
+      'js/data/tech.js','js/data/isa.js','js/data/engineers.js','js/data/segments.js',
+      'js/data/competitors.js','js/data/events.js','js/data/archetypes.js','js/data/difficulties.js',
+      'js/data/designer-config.js','js/data/tech-evolution.js','js/data/headlines.js',
+      'js/systems/chipDesign.js','js/systems/production.js','js/systems/team.js',
+      'js/systems/research.js','js/systems/market.js','js/systems/finance.js',
       'js/state.js',
-      // UI
-      'js/ui/layout.js',
-      'js/ui/systemStatus.js',
-      'js/ui/notifications.js',
-      'js/ui/panelDashboard.js',
-      'js/ui/panelDesign.js',
-      'js/ui/panelProduction.js',
-      'js/ui/panelTeam.js',
-      'js/ui/panelResearch.js',
-      'js/ui/panelMarket.js',
-      'js/ui/panelFinance.js',
-      'js/ui/menu.js',
-      'js/ui/designer.js',
-      'js/ui/profile.js',
-      // Entry
+      'js/ui/layout.js','js/ui/systemStatus.js','js/ui/notifications.js',
+      'js/ui/panelDashboard.js','js/ui/panelDesign.js','js/ui/panelProduction.js',
+      'js/ui/panelTeam.js','js/ui/panelResearch.js',
+      'js/ui/panelMarket.js','js/ui/panelFinance.js',
+      'js/ui/menu.js','js/ui/designer.js','js/ui/profile.js',
       'js/main.js'
     ];
     for (var i = 0; i < scripts.length; i++) {
