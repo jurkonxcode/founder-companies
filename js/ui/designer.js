@@ -1,21 +1,33 @@
 // js/ui/designer.js
-// Designer wizard engine + 5 categories.
+// Designer wizard engine — 5 categories with detailed step-by-step flows.
 
 let dsWizard = null;
 
 // =========================================================
-// ENTRY — category chooser (tile grid)
+// ENTRY — category chooser
 // =========================================================
 function openDesignerCategoryChooser() {
-  if (!state) return;
+  console.log('[Designer] openDesignerCategoryChooser called');
+
+  if (!state) {
+    console.warn('[Designer] no state');
+    return;
+  }
   if (state.team.length === 0) {
     toast('Recruit an engineer before starting R&D.', 'bad', 'No engineers');
     renderPanel('team');
     return;
   }
+  if (typeof DESIGNER_CONFIG === 'undefined') {
+    alert('DESIGNER_CONFIG not loaded. Check js/data/designer-config.js');
+    return;
+  }
 
   const wrap = document.getElementById('modal-wrap');
-  if (!wrap) return;
+  if (!wrap) {
+    console.warn('[Designer] #modal-wrap not found');
+    return;
+  }
 
   const groups = [
     {
@@ -64,7 +76,10 @@ function openDesignerCategoryChooser() {
 
   wrap.querySelector('[data-ds-close]')?.addEventListener('click', closeDesigner);
   wrap.querySelectorAll('[data-ds-cat]').forEach(tile => {
-    tile.addEventListener('click', () => startDesignerWizard(tile.dataset.dsCat));
+    tile.addEventListener('click', () => {
+      console.log('[Designer] category tapped:', tile.dataset.dsCat);
+      startDesignerWizard(tile.dataset.dsCat);
+    });
   });
 }
 
@@ -73,7 +88,10 @@ function openDesignerCategoryChooser() {
 // =========================================================
 function startDesignerWizard(catId) {
   const config = DESIGNER_CONFIG[catId];
-  if (!config) return;
+  if (!config) {
+    alert('Unknown category: ' + catId);
+    return;
+  }
 
   dsWizard = {
     cat: catId,
@@ -104,7 +122,6 @@ function buildEmptyDraft(catId) {
     memoryType: 'sdram',
     memoryGB: 4,
     chassis: 'mainstream',
-    cpuBrand: 'In-house',
     screenSize: 14,
     batteryWh: 40,
     useOwnCpu: true,
@@ -118,16 +135,13 @@ function buildEmptyDraft(catId) {
   };
 }
 
-// =========================================================
-// SHELL
-// =========================================================
 function renderDesignerShell() {
   const wrap = document.getElementById('modal-wrap');
   if (!wrap || !dsWizard) return;
 
-  const { config, step, draft } = dsWizard;
+  const { config, step } = dsWizard;
   const isChip = (dsWizard.cat === 'cpu' || dsWizard.cat === 'gpu');
-  const stats = isChip ? computeChipStats(draft) : computeProductStats(draft);
+  const stats = isChip ? computeChipStats(dsWizard.draft) : computeProductStats(dsWizard.draft);
 
   wrap.innerHTML = `
     <div class="modal ds-wizard ${isChip ? 'has-statbar' : ''}">
@@ -192,9 +206,7 @@ function renderDesignerShell() {
   document.getElementById('ds-back')?.addEventListener('click', closeDesigner);
   document.getElementById('ds-prev')?.addEventListener('click', designerPrev);
   document.getElementById('ds-next')?.addEventListener('click', designerNext);
-  document.getElementById('ds-help')?.addEventListener('click', () => {
-    alert(dsWizard.config.hint || 'Design your product step by step.');
-  });
+  document.getElementById('ds-help')?.addEventListener('click', () => alert(config.hint || 'Design step by step.'));
 
   bindDesignerStep();
 }
@@ -242,13 +254,8 @@ function closeDesigner() {
   dsWizard = null;
 }
 
-// =========================================================
-// COMMIT
-// =========================================================
 function commitWizard() {
   const { cat, draft } = dsWizard;
-  const tech = getTech(draft.node) || getTech('350nm');
-
   const chipData = finalizeChip({
     ...draft,
     category: cat === 'smartphone' ? 'smartphone' : cat,
@@ -309,9 +316,8 @@ function computeProductStats(draft) {
   const tech = getTech(draft.node) || { refPerf: 10 };
   if (cat === 'laptop') {
     const chassis = LAPTOP_CONFIG.chassis.find(c => c.id === draft.chassis) || LAPTOP_CONFIG.chassis[0];
-    const perf = Math.round(tech.refPerf * 0.8 + 50);
     return {
-      perf: perf,
+      perf: Math.round(tech.refPerf * 0.8 + 50),
       weight: chassis.weight.toFixed(1) + 'kg',
       battery: draft.batteryWh + 'Wh',
       cost: 200 + chassis.cost,
@@ -339,7 +345,7 @@ function computeProductStats(draft) {
 }
 
 // =========================================================
-// CPU STEPS
+// CPU
 // =========================================================
 function renderCpuStep(step) {
   if (step === 0) return renderCpuConcept();
@@ -347,7 +353,6 @@ function renderCpuStep(step) {
   if (step === 2) return renderCpuFloor();
   return '';
 }
-
 function renderCpuConcept() {
   const d = dsWizard.draft;
   const isas = CPU_CONFIG.isas.filter(i => !i.minYear || state.tahun >= i.minYear);
@@ -373,7 +378,6 @@ function renderCpuConcept() {
     </div>
   `;
 }
-
 function renderCpuMicro() {
   const d = dsWizard.draft;
   const limits = getDesignLimits(d.node);
@@ -395,7 +399,6 @@ function renderCpuMicro() {
     </div>
   `;
 }
-
 function renderCpuFloor() {
   const d = dsWizard.draft;
   const chipData = finalizeChip({ ...d, category: 'cpu' }, state.tahun, {}) || {};
@@ -403,9 +406,7 @@ function renderCpuFloor() {
   if (!d.budget || d.budget < minCost) d.budget = minCost;
   if (!d.price) d.price = Math.round((chipData.unitCost || 10) * 2);
   return `
-    <div class="ds-section">
-      <div class="ds-die-preview ds-die-large">${renderDieSVG(true)}<div class="ds-die-caption">${d.cores}C · ${d.boostClock}MHz · ${d.node}</div><div class="ds-die-hint">FINAL DIE FLOORPLAN</div></div>
-    </div>
+    <div class="ds-section"><div class="ds-die-preview ds-die-large">${renderDieSVG(true)}<div class="ds-die-caption">${d.cores}C · ${d.boostClock}MHz · ${d.node}</div><div class="ds-die-hint">FINAL DIE</div></div></div>
     ${renderSummaryGrid([
       ['Architecture', d.isa.toUpperCase() + ' · ' + d.cores + ' core'],
       ['Performance', (chipData.perfScore || 0) + ' pts'],
@@ -418,7 +419,7 @@ function renderCpuFloor() {
 }
 
 // =========================================================
-// GPU STEPS
+// GPU
 // =========================================================
 function renderGpuStep(step) {
   if (step === 0) return renderGpuConcept();
@@ -427,7 +428,6 @@ function renderGpuStep(step) {
   if (step === 3) return renderGpuFloor();
   return '';
 }
-
 function renderGpuConcept() {
   const d = dsWizard.draft;
   const segs = GPU_CONFIG.segments.filter(s => !s.minYear || state.tahun >= s.minYear);
@@ -445,20 +445,16 @@ function renderGpuConcept() {
     </div>
   `;
 }
-
 function renderGpuShaders() {
   const d = dsWizard.draft;
   const tech = getTech(d.node) || { maxClock: 300 };
   return `
-    <div class="ds-section">
-      <div class="ds-die-preview">${renderGpuDieSVG()}<div class="ds-die-caption">${d.shaderUnits} SH · ${d.rops} ROP · ${d.boostClock}MHz</div><div class="ds-die-hint">GPU DIE · Live preview</div></div>
-    </div>
+    <div class="ds-section"><div class="ds-die-preview">${renderGpuDieSVG()}<div class="ds-die-caption">${d.shaderUnits} SH · ${d.rops} ROP · ${d.boostClock}MHz</div><div class="ds-die-hint">GPU DIE · Live</div></div></div>
     ${renderSlider('Shader Units', 'ds-shaders', d.shaderUnits, 2, 64, 1, v => v)}
     ${renderSlider('ROP Units', 'ds-rops', d.rops, 2, 32, 1, v => v)}
     ${renderSlider('Boost Clock', 'ds-clock', d.boostClock, 50, Math.round(tech.maxClock || 300), 50, v => v + ' MHz')}
   `;
 }
-
 function renderGpuMemory() {
   const d = dsWizard.draft;
   const mems = GPU_CONFIG.memoryTypes.filter(m => !m.minYear || state.tahun >= m.minYear);
@@ -477,7 +473,6 @@ function renderGpuMemory() {
     ${renderSlider('VRAM', 'ds-vram', d.memoryGB, 1, 64, 1, v => v + ' GB')}
   `;
 }
-
 function renderGpuFloor() {
   const d = dsWizard.draft;
   const chipData = finalizeChip({ ...d, category: 'gpu' }, state.tahun, {}) || {};
@@ -485,9 +480,7 @@ function renderGpuFloor() {
   if (!d.budget || d.budget < minCost) d.budget = minCost;
   if (!d.price) d.price = Math.round((chipData.unitCost || 10) * 2);
   return `
-    <div class="ds-section">
-      <div class="ds-die-preview ds-die-large">${renderGpuDieSVG(true)}<div class="ds-die-caption">${d.shaderUnits} SH · ${d.memoryGB}GB ${d.memoryType.toUpperCase()} · ${d.node}</div><div class="ds-die-hint">FINAL GPU FLOORPLAN</div></div>
-    </div>
+    <div class="ds-section"><div class="ds-die-preview ds-die-large">${renderGpuDieSVG(true)}<div class="ds-die-caption">${d.shaderUnits} SH · ${d.memoryGB}GB ${d.memoryType.toUpperCase()} · ${d.node}</div><div class="ds-die-hint">FINAL GPU</div></div></div>
     ${renderSummaryGrid([
       ['Shaders', d.shaderUnits + ' units'],
       ['Memory', d.memoryGB + 'GB ' + d.memoryType.toUpperCase()],
@@ -500,7 +493,7 @@ function renderGpuFloor() {
 }
 
 // =========================================================
-// LAPTOP STEPS
+// LAPTOP
 // =========================================================
 function renderLaptopStep(step) {
   if (step === 0) return renderLaptopConcept();
@@ -509,7 +502,6 @@ function renderLaptopStep(step) {
   if (step === 3) return renderLaptopRelease();
   return '';
 }
-
 function renderLaptopConcept() {
   const d = dsWizard.draft;
   const segs = LAPTOP_CONFIG.segments.filter(s => !s.minYear || state.tahun >= s.minYear);
@@ -521,18 +513,13 @@ function renderLaptopConcept() {
         ${segs.map(s => `<button class="ds-chip ds-chip-lg ${d.segment === s.id ? 'active' : ''}" data-ds-seg="${s.id}">${s.name}</button>`).join('')}
       </div>
     </div>
-    <div class="ds-section">
-      <div class="ds-preview-laptop">${renderLaptopSVG('mainstream', 14)}</div>
-    </div>
+    <div class="ds-section"><div class="ds-preview-laptop">${renderLaptopSVG('mainstream', 14)}</div></div>
   `;
 }
-
 function renderLaptopPlatform() {
   const d = dsWizard.draft;
   return `
-    <div class="ds-section">
-      <div class="ds-die-preview ds-die-large">${renderLaptopSVG(d.chassis, d.screenSize)}<div class="ds-die-caption">${d.screenSize}" · ${d.chassis.toUpperCase()}</div></div>
-    </div>
+    <div class="ds-section"><div class="ds-die-preview ds-die-large">${renderLaptopSVG(d.chassis, d.screenSize)}<div class="ds-die-caption">${d.screenSize}" · ${d.chassis.toUpperCase()}</div></div></div>
     <div class="ds-section">
       <div class="ds-section-label">Silicon</div>
       <div class="ds-option-list">
@@ -550,7 +537,6 @@ function renderLaptopPlatform() {
     ${renderSlider('Battery', 'ds-battery', d.batteryWh, 30, 120, 5, v => v + ' Wh')}
   `;
 }
-
 function renderLaptopChassis() {
   const d = dsWizard.draft;
   return `
@@ -565,19 +551,14 @@ function renderLaptopChassis() {
         `).join('')}
       </div>
     </div>
-    <div class="ds-section">
-      <div class="ds-die-preview">${renderLaptopSVG(d.chassis, d.screenSize)}<div class="ds-die-caption">Chassis preview</div></div>
-    </div>
+    <div class="ds-section"><div class="ds-die-preview">${renderLaptopSVG(d.chassis, d.screenSize)}<div class="ds-die-caption">Chassis preview</div></div></div>
   `;
 }
-
 function renderLaptopRelease() {
   const d = dsWizard.draft;
   if (!d.price) d.price = 800;
   return `
-    <div class="ds-section">
-      <div class="ds-die-preview ds-die-large">${renderLaptopSVG(d.chassis, d.screenSize)}<div class="ds-die-caption">${d.name || 'Untitled'} · ${d.screenSize}"</div></div>
-    </div>
+    <div class="ds-section"><div class="ds-die-preview ds-die-large">${renderLaptopSVG(d.chassis, d.screenSize)}<div class="ds-die-caption">${d.name || 'Untitled'} · ${d.screenSize}"</div></div></div>
     ${renderSummaryGrid([
       ['Chassis', d.chassis],
       ['Screen', d.screenSize + '"'],
@@ -589,7 +570,7 @@ function renderLaptopRelease() {
 }
 
 // =========================================================
-// OS STEPS
+// OS
 // =========================================================
 function renderOsStep(step) {
   if (step === 0) return renderOsKernel();
@@ -597,7 +578,6 @@ function renderOsStep(step) {
   if (step === 2) return renderOsRelease();
   return '';
 }
-
 function renderOsKernel() {
   const d = dsWizard.draft;
   const segs = OS_CONFIG.segments.filter(s => !s.minYear || state.tahun >= s.minYear);
@@ -622,7 +602,6 @@ function renderOsKernel() {
     </div>
   `;
 }
-
 function renderOsFeatures() {
   const d = dsWizard.draft;
   const feats = OS_CONFIG.featurePacks.filter(f => !f.year || state.tahun >= f.year);
@@ -636,7 +615,6 @@ function renderOsFeatures() {
     </div>
   `;
 }
-
 function renderOsRelease() {
   const d = dsWizard.draft;
   if (!d.price) d.price = 90;
@@ -652,7 +630,7 @@ function renderOsRelease() {
 }
 
 // =========================================================
-// PHONE STEPS
+// PHONE
 // =========================================================
 function renderPhoneStep(step) {
   if (step === 0) return renderPhoneConcept();
@@ -661,7 +639,6 @@ function renderPhoneStep(step) {
   if (step === 3) return renderPhoneRelease();
   return '';
 }
-
 function renderPhoneConcept() {
   const d = dsWizard.draft;
   const segs = PHONE_CONFIG.segments.filter(s => !s.minYear || state.tahun >= s.minYear);
@@ -673,18 +650,13 @@ function renderPhoneConcept() {
         ${segs.map(s => `<button class="ds-chip ds-chip-lg ${d.segment === s.id ? 'active' : ''}" data-ds-seg="${s.id}">${s.name}</button>`).join('')}
       </div>
     </div>
-    <div class="ds-section">
-      <div class="ds-preview-phone">${renderPhoneSVG('glass', 5.5)}</div>
-    </div>
+    <div class="ds-section"><div class="ds-preview-phone">${renderPhoneSVG('glass', 5.5)}</div></div>
   `;
 }
-
 function renderPhonePlatform() {
   const d = dsWizard.draft;
   return `
-    <div class="ds-section">
-      <div class="ds-die-preview ds-die-large">${renderPhoneSVG(d.body, d.phoneScreen)}<div class="ds-die-caption">${d.phoneScreen}" · ${d.body.toUpperCase()}</div></div>
-    </div>
+    <div class="ds-section"><div class="ds-die-preview ds-die-large">${renderPhoneSVG(d.body, d.phoneScreen)}<div class="ds-die-caption">${d.phoneScreen}" · ${d.body.toUpperCase()}</div></div></div>
     <div class="ds-section">
       <div class="ds-section-label">Silicon</div>
       <div class="ds-option-list">
@@ -702,7 +674,6 @@ function renderPhonePlatform() {
     ${renderSlider('Battery', 'ds-pbattery', d.phoneBattery, 800, 6000, 100, v => v + ' mAh')}
   `;
 }
-
 function renderPhoneBody() {
   const d = dsWizard.draft;
   const cams = PHONE_CONFIG.cameraTiers.filter(c => !c.year || state.tahun >= c.year);
@@ -724,19 +695,14 @@ function renderPhoneBody() {
         ${cams.map(c => `<button class="ds-chip ${d.cameraTier === c.id ? 'active' : ''}" data-ds-cam="${c.id}">${c.name} · $${c.cost}</button>`).join('')}
       </div>
     </div>
-    <div class="ds-section">
-      <div class="ds-die-preview">${renderPhoneSVG(d.body, d.phoneScreen)}<div class="ds-die-caption">Body preview</div></div>
-    </div>
+    <div class="ds-section"><div class="ds-die-preview">${renderPhoneSVG(d.body, d.phoneScreen)}<div class="ds-die-caption">Body preview</div></div></div>
   `;
 }
-
 function renderPhoneRelease() {
   const d = dsWizard.draft;
   if (!d.price) d.price = 400;
   return `
-    <div class="ds-section">
-      <div class="ds-die-preview ds-die-large">${renderPhoneSVG(d.body, d.phoneScreen)}<div class="ds-die-caption">${d.name || 'Untitled'} · ${d.phoneScreen}"</div></div>
-    </div>
+    <div class="ds-section"><div class="ds-die-preview ds-die-large">${renderPhoneSVG(d.body, d.phoneScreen)}<div class="ds-die-caption">${d.name || 'Untitled'} · ${d.phoneScreen}"</div></div></div>
     ${renderSummaryGrid([
       ['Body', d.body],
       ['Screen', d.phoneScreen.toFixed(1) + '"'],
@@ -748,7 +714,7 @@ function renderPhoneRelease() {
 }
 
 // =========================================================
-// SHARED WIDGETS
+// SHARED
 // =========================================================
 function renderNameInput() {
   const d = dsWizard.draft;
@@ -763,7 +729,6 @@ function renderNameInput() {
     </div>
   `;
 }
-
 function renderSlider(label, id, value, min, max, step, fmt) {
   return `
     <div class="ds-slider">
@@ -775,7 +740,6 @@ function renderSlider(label, id, value, min, max, step, fmt) {
     </div>
   `;
 }
-
 function renderSummaryGrid(rows) {
   return `
     <div class="ds-section">
@@ -791,9 +755,6 @@ function renderSummaryGrid(rows) {
   `;
 }
 
-// =========================================================
-// BIND
-// =========================================================
 function bindDesignerStep() {
   const d = dsWizard?.draft;
   if (!d) return;
@@ -824,7 +785,7 @@ function bindDesignerStep() {
 
   const live = (id, key, fmt) => {
     $(id)?.addEventListener('input', e => {
-      d[key] = (parseFloat(e.target.value));
+      d[key] = parseFloat(e.target.value);
       const el = e.target.previousElementSibling.querySelector('.ds-slider-value');
       if (el) el.textContent = fmt ? fmt(d[key]) : d[key];
       updateStatbarLive();
@@ -882,9 +843,8 @@ function renderDieSVG(large = false) {
   }
 
   let pins = '';
-  const N = 12;
-  for (let i = 0; i < N; i++) {
-    const p = (i / (N - 1)) * W;
+  for (let i = 0; i < 12; i++) {
+    const p = (i / 11) * W;
     pins += `<circle cx="${p}" cy="4" r="1.5" fill="rgba(120,109,91,0.5)"/>`;
     pins += `<circle cx="${p}" cy="${H-4}" r="1.5" fill="rgba(120,109,91,0.5)"/>`;
     pins += `<circle cx="4" cy="${p}" r="1.5" fill="rgba(120,109,91,0.5)"/>`;
@@ -938,9 +898,9 @@ function renderLaptopSVG(chassis, screen) {
   const bezel = 6;
   const screenW = lidW - bezel * 2, screenH = lidH - bezel * 2 - 12;
   const colors = {
-    budget: { outer: 'rgba(180,160,130,0.5)', fill: 'rgba(220,210,190,0.6)' },
+    budget:     { outer: 'rgba(180,160,130,0.5)', fill: 'rgba(220,210,190,0.6)' },
     mainstream: { outer: 'rgba(150,140,120,0.6)', fill: 'rgba(200,195,185,0.7)' },
-    premium: { outer: 'rgba(120,110,95,0.7)', fill: 'rgba(180,175,165,0.8)' },
+    premium:    { outer: 'rgba(120,110,95,0.7)',  fill: 'rgba(180,175,165,0.8)' },
   };
   const c = colors[chassis] || colors.mainstream;
   return `
@@ -963,7 +923,7 @@ function renderPhoneSVG(body, screen) {
   const bezel = 5;
   const colors = {
     plastic: 'rgba(200,190,170,0.7)',
-    glass: 'rgba(80,80,90,0.7)',
+    glass:   'rgba(80,80,90,0.7)',
     ceramic: 'rgba(230,225,215,0.9)',
   };
   const c = colors[body] || colors.glass;
@@ -978,16 +938,13 @@ function renderPhoneSVG(body, screen) {
   `;
 }
 
-// =========================================================
-// ICONS
-// =========================================================
 function svgIconFor(name, color) {
   const map = {
-    cpu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>',
-    gpu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>',
+    cpu:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>',
+    gpu:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>',
     laptop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="11" rx="1"/><path d="M2 19h20"/></svg>',
-    os: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg>',
-    phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
+    os:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg>',
+    phone:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
   };
   return (map[name] || map.cpu).replace('<svg ', `<svg style="color:${color}" `);
-}
+                                                                                                                 }
