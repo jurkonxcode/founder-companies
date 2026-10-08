@@ -2401,3 +2401,192 @@ table td.bad { color: var(--bad); }
   position: relative;
   overflow: hidden;
 }
+/* =========================================================
+   DESIGNER MOBILE FIX — proper flex layout, no overlap
+   ========================================================= */
+
+/* Ensure ds-wizard is a real flex column with min-height 0 */
+.ds-wizard {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
+}
+
+.ds-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain;
+}
+
+.ds-statbar,
+.ds-footer {
+  flex: 0 0 auto !important;
+}
+
+/* Feature badges (evolution lists) */
+.ds-feature-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ds-feature-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 5px 10px;
+  background: rgba(201,84,42,0.10);
+  border: 1px solid rgba(201,84,42,0.30);
+  border-radius: 999px;
+  color: var(--accent);
+}
+.ds-feature-badge-lg {
+  display: inline-block;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  padding: 10px 18px;
+  background: rgba(201,84,42,0.10);
+  border: 1px solid rgba(201,84,42,0.30);
+  border-radius: 999px;
+  color: var(--accent);
+}
+
+/* Locked chips (features not yet available for year) */
+.ds-chip-locked {
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
+  position: relative;
+}
+.ds-chip-locked::after {
+  content: '🔒';
+  margin-left: 4px;
+  font-size: 9px;
+}
+
+/* Empty note */
+.ds-empty-note {
+  text-align: center;
+  padding: 40px 20px;
+  background: var(--bg-2);
+  border: 1px dashed var(--line-2);
+  border-radius: 14px;
+}
+.ds-empty-note-icon { font-size: 44px; opacity: 0.5; margin-bottom: 10px; }
+.ds-empty-note-title {
+  font-family: var(--font-serif);
+  font-size: 18px; font-weight: 700;
+  color: var(--fg-2); margin-bottom: 6px;
+}
+.ds-empty-note-desc { font-size: 12.5px; color: var(--fg-3); line-height: 1.5; max-width: 280px; margin: 0 auto; }
+
+/* ============ MOBILE ============ */
+@media (max-width: 900px) {
+  #modal-wrap {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+  .ds-wizard {
+    max-width: none !important;
+    width: 100% !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+    padding-bottom: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  /* Reserve space for safe area on iOS */
+  .ds-header {
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 12px !important;
+    flex-shrink: 0 !important;
+  }
+  .ds-back-btn { width: 36px !important; height: 36px !important; }
+  .ds-title-main { font-size: 17px !important; }
+  .ds-cash-value { font-size: 14px !important; }
+  .ds-cash-date { font-size: 9px !important; }
+  .ds-help-btn { width: 30px !important; height: 30px !important; font-size: 13px !important; }
+
+  .ds-progress {
+    padding: 10px 14px 12px !important;
+    flex-shrink: 0 !important;
+  }
+  .ds-dot { width: 10px !important; height: 10px !important; }
+  .ds-dot-label { font-size: 8px !important; margin-top: 4px !important; letter-spacing: 0.04em; }
+  .ds-step-label { font-size: 10px !important; }
+  .ds-step-title { font-size: 10px !important; letter-spacing: 0.06em; }
+
+  .ds-body {
+    padding: 14px 14px 14px !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+  }
+  .ds-section { margin-bottom: 16px !important; }
+  .ds-section-label { font-size: 9px !important; margin-bottom: 8px !important; }
+
+  .ds-die-preview { padding: 10px !important; border-radius: 12px !important; }
+  .ds-die-large { padding: 12px !important; }
+  .ds-die-caption { font-size: 10.5px !important; margin-top: 8px !important; }
+  .ds-die-hint { font-size: 8.5px !important; }
+
+  .ds-input-lg {
+    padding: 12px 14px !important;
+    font-size: 15px !important;
+    border-radius: 10px !important;
+  }
+  .ds-chip {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+  .ds-chip-lg { padding: 8px 14px !important; font-size: 13px !important; }
+
+  .ds-option { padding: 10px 13px !important; border-radius: 10px !important; }
+  .ds-option-name { font-size: 14px !important; }
+  .ds-option-desc { font-size: 11px !important; }
+
+  .ds-slider { margin-bottom: 12px !important; }
+  .ds-slider-label { font-size: 11.5px !important; }
+  .ds-slider-value { font-size: 12px !important; }
+
+  .ds-summary-grid { gap: 6px !important; }
+  .ds-summary-cell { padding: 8px 10px !important; }
+  .ds-sum-label { font-size: 8px !important; }
+  .ds-sum-value { font-size: 12px !important; }
+
+  .ds-statbar {
+    flex-shrink: 0 !important;
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+  }
+  .ds-statbar-cell { padding: 10px 6px !important; }
+  .ds-sb-label { font-size: 8px !important; letter-spacing: 0.08em !important; }
+  .ds-sb-value { font-size: 16px !important; }
+
+  .ds-footer {
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+    flex-shrink: 0 !important;
+    background: var(--bg-0) !important;
+    border-top: 1px solid var(--line);
+  }
+  .ds-nav-btn { height: 44px !important; font-size: 13px !important; }
+  .ds-nav-back { width: 44px !important; }
+}
+
+/* Small phones */
+@media (max-width: 400px) {
+  .ds-dot-label { font-size: 7px !important; }
+  .ds-title-main { font-size: 15px !important; }
+  .ds-statbar-cell { padding: 8px 4px !important; }
+  .ds-sb-value { font-size: 14px !important; }
+}
