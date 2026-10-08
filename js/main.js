@@ -1,7 +1,57 @@
 // js/main.js
-// Entry point. Boot, binding tombol, dan orkestrasi nextTurn().
+// Entry point: menu init, game boot, turn loop, speed control, event handling.
 
-// ===== Render semua =====
+// =========================================================
+// SPEED CONTROL
+// =========================================================
+let _turnTimer = null;
+
+function setSpeed(rate) {
+  if (_turnTimer) { clearInterval(_turnTimer); _turnTimer = null; }
+
+  if (typeof state !== 'undefined' && state) {
+    state.speed = rate;
+    if (rate > 0) state._lastSpeed = rate;
+  }
+
+  // Update UI
+  document.querySelectorAll('[data-speed]').forEach(b => {
+    const bRate = parseInt(b.dataset.speed);
+    b.classList.toggle('active', bRate === rate);
+  });
+
+  // Start auto-advance
+  if (rate > 0) {
+    const interval = 3000 / rate; // 1× = 3s, 2× = 1.5s, 4× = 0.75s
+    _turnTimer = setInterval(() => {
+      if (!state || state.gameOver) { setSpeed(0); return; }
+      nextTurn(true);
+    }, interval);
+  }
+
+  if (typeof saveGame === 'function') saveGame(true);
+}
+
+function togglePause() {
+  if (!state) return;
+  if (state.speed > 0) {
+    setSpeed(0);
+  } else {
+    setSpeed(state._lastSpeed || 1);
+  }
+}
+
+function bindSpeedControls() {
+  document.querySelectorAll('[data-speed]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setSpeed(parseInt(btn.dataset.speed));
+    });
+  });
+}
+
+// =========================================================
+// RENDER ALL
+// =========================================================
 function renderAll() {
   renderTopbar();
   renderBottomBar();
@@ -10,7 +60,6 @@ function renderAll() {
   updateNavBadges();
 }
 
-// ===== Badge di nav =====
 function updateNavBadges() {
   const ready = state.projects.filter(p => p.status === 'done').length;
   setNavBadge('production', ready > 0);
@@ -20,30 +69,34 @@ function updateNavBadges() {
   setNavBadge('team', state.team.length === 0 && candidates > 0);
 }
 
-// ===== NEXT TURN — orkestrasi utama =====
-function nextTurn() {
-  if (!state || state.gameOver) return;
+// =========================================================
+// NEXT TURN
+// =========================================================
+function nextTurn(fromAuto = false) {
+  if (!state || state.gameOver || state._processing) return;
+
+  state._processing = true;
 
   const btn = document.getElementById('btn-next-turn');
-  btn.disabled = true;
-  setBottomNote('Memproses turn...', 'busy');
+  if (!fromAuto && btn) btn.disabled = true;
+  setBottomNote('Processing turn...', 'busy');
 
-  // 1. Majukan waktu
+  // 1. Advance time
   state.turn += 1;
   state.bulan += 1;
   if (state.bulan > 12) {
     state.bulan = 1;
     state.tahun += 1;
-    addLog(`Tahun ${state.tahun} dimulai.`, 'info');
+    addLog(`Year ${state.tahun} begins.`, 'info');
   }
 
-  // 2. Refresh pool kandidat tiap 6 turn
+  // 2. Refresh candidate pool every 6 turns
   if (state.turn % 6 === 0) {
     state.pool = refreshPool(state.pool, state.tahun);
-    addLog('Pool kandidat engineer diperbarui.', 'info');
+    addLog('Engineer candidate pool refreshed.', 'info');
   }
 
-  // 3. Majukan proyek R&D
+  // 3. Advance R&D projects
   let rdSpend = 0;
   const activeProjects = state.projects.filter(p => p.status === 'active');
   for (const p of activeProjects) {
@@ -52,27 +105,28 @@ function nextTurn() {
     rdSpend += result.cost;
 
     if (result.completed) {
-      addLog(`Proyek "${p.name}" selesai. Siap diluncurkan.`, 'good');
-      toast(`${p.name} selesai dirancang!`, 'good', 'R&D Selesai');
+      addLog(`Project "${p.name}" completed. Ready to launch.`, 'good');
+      toast(`${p.name} finished design!`, 'good', 'R&D Complete');
+      if (state.speed > 0) setSpeed(0); // pause on milestone
     } else if (result.stageChanged) {
       const stage = PROJECT_STAGES[p.stageIndex];
-      addLog(`"${p.name}" masuk tahap ${stage.name}.`, 'info');
+      addLog(`"${p.name}" entered ${stage.name} stage.`, 'info');
     }
   }
   state.uang -= rdSpend;
 
-  // 4. Gaji engineer
+  // 4. Salaries
   const salary = Math.round(calcMonthlySalary(state.team));
   if (salary > 0) state.uang -= salary;
 
-  // 5. Research point
+  // 5. Research points
   const rpGain = calcRPGain(state);
   state.researchPoint += rpGain;
 
-  // 6. Kompetitor bergerak
+  // 6. Competitor moves
   const compEvents = simulateCompetitorActions(state);
   for (const ev of compEvents) {
-    addLog(`${ev.competitor.name} merilis ${ev.category} baru (${ev.tech.name}).`, 'warn');
+    addLog(`${ev.competitor.name} released a new ${ev.category} (${ev.tech.name}).`, 'warn');
   }
 
   // 7. Update market share
@@ -84,27 +138,27 @@ function nextTurn() {
     }));
   updateMarketShare(state, recentSales);
 
-  // 8. Pendapatan pasif dari produk lama
+  // 8. Passive income
   const passive = calcPassiveIncome(state);
   if (passive > 0) {
     state.uang += passive;
     state.totalRevenue += passive;
   }
 
-  // 9. Bayar utang
+  // 9. Debt payment
   if (state.debt > 0) {
     const payment = Math.min(Math.round(state.debt * 0.06), Math.round(state.uang * 0.3));
     if (payment > 0) {
       state.uang -= payment;
       state.debt -= payment;
       if (state.debt < 1000) {
-        addLog('Utang lunas.', 'good');
+        addLog('Debt fully repaid.', 'good');
         state.debt = 0;
       }
     }
   }
 
-  // 10. Event bersejarah
+  // 10. Historical event
   const histEv = getHistoricalEvent(state.tahun, state.bulan);
   if (histEv && !state.triggeredEvents.find(e => e.id === histEv.id)) {
     state.triggeredEvents.push({
@@ -116,124 +170,130 @@ function nextTurn() {
     addLog(`${histEv.title} — ${histEv.desc}`, logType);
     toast(histEv.desc, histEv.type === 'bad' ? 'bad' : 'info', histEv.title);
 
-    // Bonus share langsung
     if (histEv.effects.share) {
       state.marketShare = Math.min(0.75, state.marketShare + histEv.effects.share);
     }
+    if (state.speed > 0) setSpeed(0); // pause on milestone event
   }
 
-  // 11. Event acak
+  // 11. Random event
   const randEv = rollRandomEvent();
   if (randEv) handleRandomEvent(randEv);
 
-  // 12. Update loyalitas
+  // 12. Loyalty update
   updateLoyalty(state.team, state.marketShare);
 
-  // 13. Resignasi
+  // 13. Resignations
   const resigned = checkResignations(state.team);
   for (const eng of resigned) {
-    addLog(`${eng.name} mengundurkan diri.`, 'bad');
-    toast(`${eng.name} resign!`, 'bad');
+    addLog(`${eng.name} resigned.`, 'bad');
+    toast(`${eng.name} resigned!`, 'bad');
     state.team = state.team.filter(e => e.id !== eng.id);
     for (const p of state.projects) {
       p.engineerIds = p.engineerIds.filter(id => id !== eng.id);
     }
   }
 
-  // 14. Cek bangkrut
+  // 14. Bankruptcy
   const bk = checkBankruptcy(state);
   if (bk.bankrupt) {
     state.gameOver = true;
-    addLog('PERUSAHAAN BANGKRUT. Permainan berakhir.', 'bad');
-    toast('Perusahaan bangkrut!', 'bad', 'Game Over');
+    addLog('COMPANY BANKRUPT. Game over.', 'bad');
+    toast('Company bankrupt!', 'bad', 'Game Over');
+    if (state.speed > 0) setSpeed(0);
     renderAll();
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
     setBottomNote('Game over.', 'busy');
+    state._processing = false;
     return;
   }
 
-  // 15. Ringkasan turn
+  // 15. Turn summary
   const net = passive - salary - rdSpend;
   setBottomNote(
-    `Kas ${formatMoneyShort(state.uang)} · ${rpGain} RP · ${compEvents.length} gerakan kompetitor`,
+    `Cash ${formatMoneyShort(state.uang)} · ${rpGain} RP · ${compEvents.length} rival moves`,
     net >= 0 ? 'good' : 'busy'
   );
 
-  // 16. Render
   renderAll();
-  btn.disabled = false;
+  if (!fromAuto && btn) btn.disabled = false;
+  state._processing = false;
 }
 
-// ===== Handle event acak =====
+// =========================================================
+// RANDOM EVENT HANDLER
+// =========================================================
 function handleRandomEvent(ev) {
   const logType = ev.type === 'bad' ? 'bad' : 'good';
   addLog(`${ev.title} — ${ev.desc}`, logType);
   toast(ev.desc, logType, ev.title);
 
+  const diff = (typeof getActiveDifficulty === 'function' && state) ? getActiveDifficulty(state) : { playerPenaltyMult: 1 };
+
   switch (ev.effect) {
     case 'poach': {
-      // Turunkan loyalitas satu engineer acak
       if (state.team.length === 0) break;
       const victim = state.team[Math.floor(Math.random() * state.team.length)];
       victim.loyalty = Math.max(0, victim.loyalty - 20);
       break;
     }
     case 'viral': {
-      // Bonus kas instan
       const bonus = Math.round(50000 + state.team.length * 10000);
       state.uang += bonus;
-      addLog(`Bonus viral: ${formatMoneyShort(bonus)}.`, 'good');
+      addLog(`Viral bonus: ${formatMoneyShort(bonus)}.`, 'good');
       break;
     }
     case 'bug': {
-      // Biaya perbaikan
-      const cost = Math.round(20000 + state.projects.length * 15000);
+      const cost = Math.round((20000 + state.projects.length * 15000) * diff.playerPenaltyMult);
       state.uang = Math.max(0, state.uang - cost);
-      addLog(`Biaya perbaikan bug: ${formatMoneyShort(cost)}.`, 'bad');
+      addLog(`Bug fix cost: ${formatMoneyShort(cost)}.`, 'bad');
       break;
     }
     case 'award': {
-      // Tambah market share
       state.marketShare = Math.min(0.75, state.marketShare + 0.01);
       break;
     }
     case 'lawsuit': {
-      const cost = Math.round(80000 + state.marketShare * 500000);
+      const cost = Math.round((80000 + state.marketShare * 500000) * diff.playerPenaltyMult);
       state.uang = Math.max(0, state.uang - cost);
-      addLog(`Denda gugatan: ${formatMoneyShort(cost)}.`, 'bad');
+      addLog(`Lawsuit fine: ${formatMoneyShort(cost)}.`, 'bad');
       break;
     }
     case 'subsidy': {
       const bonus = Math.round(100000 + state.researchPoint * 200);
       state.uang += bonus;
-      addLog(`Subsidi pemerintah: ${formatMoneyShort(bonus)}.`, 'good');
+      addLog(`Government subsidy: ${formatMoneyShort(bonus)}.`, 'good');
       break;
     }
   }
 }
 
-// ===== Binding =====
+// =========================================================
+// BINDINGS
+// =========================================================
 function bindGlobalActions() {
-  document.getElementById('btn-next-turn').addEventListener('click', nextTurn);
+  document.getElementById('btn-next-turn')?.addEventListener('click', () => nextTurn(false));
 
-  document.getElementById('btn-save').addEventListener('click', () => {
-    if (saveGame()) toast('Game disimpan.', 'good');
+  document.getElementById('btn-save')?.addEventListener('click', () => {
+    if (saveGame()) toast('Game saved.', 'good');
   });
 
-  document.getElementById('btn-reset').addEventListener('click', () => {
+  document.getElementById('btn-reset')?.addEventListener('click', () => {
     openModal({
       title: 'Reset Game',
-      body: '<p>Semua progres akan hilang. Yakin?</p>',
+      body: '<p>All progress will be lost. Are you sure?</p>',
       actions: [
-        { label: 'Batal' },
+        { label: 'Cancel' },
         {
-          label: 'Ya, Reset',
+          label: 'Yes, Reset',
           type: 'danger',
           onClick: () => {
+            if (_turnTimer) { clearInterval(_turnTimer); _turnTimer = null; }
             resetGame();
-            designDraft = null;
+            if (typeof designDraft !== 'undefined') designDraft = null;
             renderPanel('dashboard');
             renderAll();
+            setSpeed(0);
           },
         },
       ],
@@ -241,45 +301,77 @@ function bindGlobalActions() {
   });
 }
 
-// ===== Keyboard shortcuts =====
 function bindKeyboard() {
   document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
 
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      if (!state.gameOver) nextTurn();
+      if (state && !state.gameOver) nextTurn(false);
     }
-    if (e.key === '1') renderPanel('dashboard');
-    if (e.key === '2') renderPanel('design');
+    if (e.key === ' ') {
+      e.preventDefault();
+      togglePause();
+    }
+    if (e.key === '1') { if (e.shiftKey) setSpeed(1); else renderPanel('dashboard'); }
+    if (e.key === '2') { if (e.shiftKey) setSpeed(2); else renderPanel('design'); }
     if (e.key === '3') renderPanel('production');
-    if (e.key === '4') renderPanel('team');
+    if (e.key === '4') { if (e.shiftKey) setSpeed(4); else renderPanel('team'); }
     if (e.key === '5') renderPanel('research');
     if (e.key === '6') renderPanel('market');
     if (e.key === '7') renderPanel('finance');
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
-      if (saveGame()) toast('Game disimpan.', 'good');
+      if (saveGame()) toast('Game saved.', 'good');
     }
   });
 }
 
-// ===== Boot =====
+// =========================================================
+// BOOT
+// =========================================================
 function boot() {
-  initState();
+  if (!state) initState();
   bindNav();
   bindGlobalActions();
   bindKeyboard();
+  bindSpeedControls();
+  if (typeof initSystemStatus === 'function') initSystemStatus();
+  if (typeof bindNewsDrawer === 'function') bindNewsDrawer();
   renderPanel('dashboard');
   renderAll();
 
-  // Kalau game over dari save lama, disable tombol
+  // Restore speed from save (or default to pause)
+  const savedSpeed = state.speed || 0;
+  setSpeed(savedSpeed);
+
   if (state.gameOver) {
-    document.getElementById('btn-next-turn').disabled = true;
-    setBottomNote('Game over. Reset untuk memulai lagi.', 'busy');
+    const btn = document.getElementById('btn-next-turn');
+    if (btn) btn.disabled = true;
+    setBottomNote('Game over. Reset to play again.', 'busy');
   } else {
-    setBottomNote(`Selamat datang, pendiri. Klik Next Turn untuk memulai.`, '');
+    setBottomNote('Welcome, founder. Choose a speed to begin.', '');
   }
 }
 
-document.addEventListener('DOMContentLoaded', boot);
+function bootGame() {
+  boot();
+}
+
+function loadAndBootGame() {
+  initState();
+  boot();
+}
+
+// =========================================================
+// ENTRY POINT
+// =========================================================
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof initMenu === 'function') {
+    initMenu();
+  } else {
+    console.warn('[Main] initMenu not found — booting directly.');
+    boot();
+  }
+});
