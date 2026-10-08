@@ -1,5 +1,5 @@
 // js/ui/designer.js
-// Designer wizard engine — 5 categories with detailed step-by-step flows.
+// Designer wizard engine — 5 categories. Self-binds Create button.
 
 let dsWizard = null;
 
@@ -9,10 +9,7 @@ let dsWizard = null;
 function openDesignerCategoryChooser() {
   console.log('[Designer] openDesignerCategoryChooser called');
 
-  if (!state) {
-    console.warn('[Designer] no state');
-    return;
-  }
+  if (!state) { console.warn('[Designer] no state'); return; }
   if (state.team.length === 0) {
     toast('Recruit an engineer before starting R&D.', 'bad', 'No engineers');
     renderPanel('team');
@@ -24,10 +21,7 @@ function openDesignerCategoryChooser() {
   }
 
   const wrap = document.getElementById('modal-wrap');
-  if (!wrap) {
-    console.warn('[Designer] #modal-wrap not found');
-    return;
-  }
+  if (!wrap) { console.warn('[Designer] #modal-wrap not found'); return; }
 
   const groups = [
     {
@@ -84,14 +78,11 @@ function openDesignerCategoryChooser() {
 }
 
 // =========================================================
-// WIZARD ENGINE
+// WIZARD
 // =========================================================
 function startDesignerWizard(catId) {
   const config = DESIGNER_CONFIG[catId];
-  if (!config) {
-    alert('Unknown category: ' + catId);
-    return;
-  }
+  if (!config) { alert('Unknown category: ' + catId); return; }
 
   dsWizard = {
     cat: catId,
@@ -345,7 +336,7 @@ function computeProductStats(draft) {
 }
 
 // =========================================================
-// CPU
+// CPU STEPS
 // =========================================================
 function renderCpuStep(step) {
   if (step === 0) return renderCpuConcept();
@@ -419,7 +410,7 @@ function renderCpuFloor() {
 }
 
 // =========================================================
-// GPU
+// GPU STEPS
 // =========================================================
 function renderGpuStep(step) {
   if (step === 0) return renderGpuConcept();
@@ -493,7 +484,7 @@ function renderGpuFloor() {
 }
 
 // =========================================================
-// LAPTOP
+// LAPTOP STEPS
 // =========================================================
 function renderLaptopStep(step) {
   if (step === 0) return renderLaptopConcept();
@@ -570,7 +561,7 @@ function renderLaptopRelease() {
 }
 
 // =========================================================
-// OS
+// OS STEPS
 // =========================================================
 function renderOsStep(step) {
   if (step === 0) return renderOsKernel();
@@ -630,7 +621,7 @@ function renderOsRelease() {
 }
 
 // =========================================================
-// PHONE
+// PHONE STEPS
 // =========================================================
 function renderPhoneStep(step) {
   if (step === 0) return renderPhoneConcept();
@@ -714,7 +705,7 @@ function renderPhoneRelease() {
 }
 
 // =========================================================
-// SHARED
+// SHARED WIDGETS
 // =========================================================
 function renderNameInput() {
   const d = dsWizard.draft;
@@ -947,4 +938,29 @@ function svgIconFor(name, color) {
     phone:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
   };
   return (map[name] || map.cpu).replace('<svg ', `<svg style="color:${color}" `);
-                                                                                                                 }
+}
+
+// =========================================================
+// SELF-BINDING — Create button
+// Independent of main.js. Runs on load and after delays.
+// =========================================================
+function _bindCreateButton() {
+  const btn = document.getElementById('nav-create');
+  if (!btn) { console.warn('[Designer] #nav-create not found'); return; }
+  if (btn.dataset.designerBound === '1') return;
+  btn.dataset.designerBound = '1';
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('[Designer] Create button clicked');
+    if (typeof openDesignerCategoryChooser === 'function') {
+      openDesignerCategoryChooser();
+    }
+  });
+  console.log('[Designer] Create button bound');
+}
+
+document.addEventListener('DOMContentLoaded', _bindCreateButton);
+window.addEventListener('load', _bindCreateButton);
+setTimeout(_bindCreateButton, 500);
+setTimeout(_bindCreateButton, 1500);
