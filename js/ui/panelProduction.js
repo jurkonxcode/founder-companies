@@ -1,5 +1,5 @@
 // js/ui/panelProduction.js
-// Production hub — Active R&D, Factory, Research, Team in one place.
+// Production hub — Active R&D, Product Portfolio, Factory, Research, Team.
 
 function showProduction(focus) {
   const active = state.projects.filter(p => p.status === 'active');
@@ -46,20 +46,9 @@ function showProduction(focus) {
       ${active.map(p => renderActiveProjectCard(p)).join('')}
     ` : ''}
 
-    ${active.length === 0 && ready.length === 0 ? `
-      <div class="card" style="text-align:center;padding:32px 20px;">
-        <div style="font-size:44px;opacity:0.35;margin-bottom:12px;">🧪</div>
-        <div style="font-family:var(--font-serif);font-size:18px;font-weight:700;color:var(--fg-2);margin-bottom:6px;">
-          No active projects
-        </div>
-        <div style="font-size:12.5px;color:var(--fg-3);margin-bottom:16px;">
-          Start designing your next chip.
-        </div>
-        <button class="btn primary" onclick="if(typeof openDesignerCategoryChooser==='function')openDesignerCategoryChooser()">
-          Open Designer
-        </button>
-      </div>
-    ` : ''}
+    <!-- ============ PRODUCT PORTFOLIO ============ -->
+    <div class="section-title">Product portfolio · ${launched.length}</div>
+    ${renderPortfolio(launched)}
 
     <!-- ============ FACTORY ============ -->
     <div class="section-title" id="prod-factory">Factory</div>
@@ -120,30 +109,18 @@ function showProduction(focus) {
       </div>
     </div>
 
-    <!-- ============ SHIPPED PRODUCTS ============ -->
-    ${launched.length > 0 ? `
-      <div class="section-title">Shipped products · ${launched.length}</div>
-      <div class="card">
-        <table>
-          <thead><tr><th>Name</th><th>Node</th><th class="num">Units</th><th class="num">Revenue</th></tr></thead>
-          <tbody>
-            ${launched.slice(-8).reverse().map(p => `
-              <tr>
-                <td>${escapeHtml(p.name)}</td>
-                <td>${p.node}</td>
-                <td class="num">${(p.sales || 0).toLocaleString('en-US')}</td>
-                <td class="num good">${formatMoneyShort(p.revenue || 0)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    ` : ''}
   `);
 
   // ===== Bind =====
   document.querySelectorAll('[data-launch-prod]').forEach(b => {
     b.addEventListener('click', () => launchFromProduction(b.dataset.launchProd));
+  });
+
+  document.querySelectorAll('[data-portfolio-cat]').forEach(el => {
+    el.addEventListener('click', () => {
+      // placeholder — later: open product detail modal
+      toast('Product detail coming soon.', 'info');
+    });
   });
 
   document.getElementById('prod-research-btn')?.addEventListener('click', () => {
@@ -160,12 +137,10 @@ function showProduction(focus) {
   });
 
   document.getElementById('prod-team-hire')?.addEventListener('click', () => {
-    if (typeof openTeamModal === 'function') return openTeamModal();
-    // fallback: if showTeam exists, use it
     if (typeof showTeam === 'function') {
-      // open as fullscreen replacement of production
-      setPanel('Team', '', '');
-      showTeam();
+      // showTeam renders into panel body — but we're in production view
+      // Simplest: switch to team modal or leave a note
+      toast('Team management coming soon via modal.', 'info');
     }
   });
 
@@ -176,6 +151,126 @@ function showProduction(focus) {
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   }
+}
+
+// =========================================================
+// PORTFOLIO
+// =========================================================
+function renderPortfolio(launched) {
+  if (launched.length === 0) {
+    return `
+      <div class="portfolio-empty">
+        <div class="portfolio-empty-icon">📦</div>
+        <div class="portfolio-empty-title">No products shipped yet</div>
+        <div class="portfolio-empty-desc">Design and launch your first chip to build a product history.</div>
+        <button class="btn primary" onclick="if(typeof openDesignerCategoryChooser==='function')openDesignerCategoryChooser()">
+          Open Designer
+        </button>
+      </div>
+    `;
+  }
+
+  // Group by category
+  const categories = ['cpu', 'gpu', 'laptop', 'smartphone', 'os'];
+  const grouped = {};
+  categories.forEach(c => grouped[c] = []);
+  launched.forEach(p => {
+    if (grouped[p.category]) grouped[p.category].push(p);
+  });
+
+  // Sort each category by launch turn (oldest first)
+  categories.forEach(c => {
+    grouped[c].sort((a, b) => (a.launchTurn || 0) - (b.launchTurn || 0));
+  });
+
+  const blocks = categories.map(cat => {
+    const items = grouped[cat];
+    if (items.length === 0) return '';
+    return renderPortfolioCategory(cat, items);
+  }).filter(Boolean).join('');
+
+  // Handle any unknown categories gracefully
+  const knownCats = new Set(categories);
+  const orphans = launched.filter(p => !knownCats.has(p.category));
+  const orphanBlock = orphans.length > 0 ? renderPortfolioCategory(orphans[0].category, orphans) : '';
+
+  return `<div class="portfolio-wrap">${blocks}${orphanBlock}</div>`;
+}
+
+function renderPortfolioCategory(cat, items) {
+  const catInfo = (typeof getCategory === 'function') ? getCategory(cat) : { name: cat };
+  const isOS = cat === 'os';
+
+  // Node progression string
+  const nodes = items.map(p => p.node);
+  const progression = nodes.join('  →  ');
+
+  // Head summary
+  const countLabel = isOS
+    ? `${items.length} version${items.length === 1 ? '' : 's'}`
+    : `${items.length} product${items.length === 1 ? '' : 's'}`;
+
+  // First vs latest node for progress indicator
+  const firstNode = nodes[0];
+  const lastNode = nodes[nodes.length - 1];
+  const nodeMoved = nodes.length > 1 && firstNode !== lastNode;
+
+  return `
+    <div class="portfolio-category">
+      <div class="portfolio-head">
+        <div class="portfolio-cat-name">
+          ${iconFor(cat)}
+          <span>${escapeHtml(catInfo.name)}</span>
+        </div>
+        <div class="portfolio-cat-count">${countLabel}</div>
+      </div>
+
+      ${nodeMoved ? `
+        <div class="portfolio-progression">
+          <span class="pp-from">${escapeHtml(firstNode)}</span>
+          <span class="pp-arrow">→</span>
+          <span class="pp-to">${escapeHtml(lastNode)}</span>
+          <span class="pp-label">node shrink ${items.length - 1}×</span>
+        </div>
+      ` : nodes.length === 1 ? `
+        <div class="portfolio-progression">
+          <span class="pp-from">${escapeHtml(firstNode)}</span>
+          <span class="pp-label">initial node</span>
+        </div>
+      ` : ''}
+
+      <div class="portfolio-scroll">
+        ${items.map(p => renderPortfolioCard(p, cat, isOS)).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderPortfolioCard(p, cat, isOS) {
+  const catColor = (typeof categoryColor === 'function') ? categoryColor(cat) : '#c9542a';
+  const rank = state.products.filter(x => x.launched && x.category === cat)
+    .sort((a, b) => (a.launchTurn || 0) - (b.launchTurn || 0))
+    .findIndex(x => x.id === p.id) + 1;
+
+  const versionLabel = isOS ? `v${rank}` : `#${rank}`;
+
+  return `
+    <div class="portfolio-card" data-portfolio-cat="${cat}">
+      <div class="portfolio-version" style="background:${catColor}20;color:${catColor}">
+        ${versionLabel}
+      </div>
+      <div class="portfolio-art">
+        ${typeof renderBoxArt === 'function' ? renderBoxArt(p) : ''}
+      </div>
+      <div class="portfolio-name">${escapeHtml(p.name)}</div>
+      <div class="portfolio-meta">
+        <span>${p.node}</span>
+        <span>·</span>
+        <span>${p.perfScore} pts</span>
+      </div>
+      <div class="portfolio-price">${formatMoneyShort(p.revenue || 0)}</div>
+    </div>
+  `;
 }
 
 // =========================================================
@@ -221,7 +316,6 @@ function launchFromProduction(projectId) {
   if (typeof launchProduct === 'function') {
     return launchProduct(projectId);
   }
-  // Fallback minimal
   const p = state.projects.find(x => x.id === projectId);
   if (!p) return;
   p.status = 'launched';
@@ -229,7 +323,6 @@ function launchFromProduction(projectId) {
   showProduction();
 }
 
-// Bind cancel buttons (delegate)
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-cancel-prod]');
   if (!btn) return;
@@ -245,7 +338,9 @@ document.addEventListener('click', (e) => {
   showProduction();
 });
 
+// =========================================================
 // Icon helper (duplicate-safe)
+// =========================================================
 if (typeof iconFor !== 'function') {
   window.iconFor = function(cat) {
     const colors = { cpu:'#c9542a', gpu:'#7a5ba8', os:'#3d8b5f', laptop:'#b8852b', smartphone:'#c47a2e' };
