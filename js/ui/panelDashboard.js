@@ -1,8 +1,8 @@
 // js/ui/panelDashboard.js
-// Home panel — rank card, profit chart, product lineup.
+// Home panel — swipeable carousel (rank + media + latest product) + chart + lineup.
 
 // =========================================================
-// HELPERS — SVG chart engine
+// HELPERS
 // =========================================================
 function svgLinePath(data, w, h, pad) {
   if (!data || data.length < 2) return '';
@@ -25,17 +25,154 @@ function svgAreaPath(data, w, h, pad) {
   const range = (max - min) || 1;
   const stepX = (w - pad * 2) / (data.length - 1);
   const lastX = pad + (data.length - 1) * stepX;
-  const firstX = pad;
-  return `${line} L ${lastX},${h - pad} L ${firstX},${h - pad} Z`;
+  return `${line} L ${lastX},${h - pad} L ${pad},${h - pad} Z`;
 }
 
 function monthLabel(turnOffset, currentTurn, currentYear, currentMonth) {
-  // Walk back `turnOffset` months from current (year,month)
   let m = currentMonth - turnOffset;
   let y = currentYear;
   while (m <= 0) { m += 12; y -= 1; }
   const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return `${names[m-1]} '${String(y).slice(-2)}`;
+}
+
+// =========================================================
+// MEDIA COVERAGE GENERATOR
+// =========================================================
+function generateMediaCoverage() {
+  const items = [];
+  const companyName = state.companyName || 'Your company';
+  const launched = state.products.filter(p => p.launched);
+  const latest = launched[launched.length - 1];
+  const teamSize = state.team.length;
+
+  // 1. Latest product launch
+  if (latest) {
+    const age = state.turn - (latest.launchTurn || 0);
+    if (age <= 6) {
+      items.push({
+        outlet: 'TechWire Daily',
+        icon: '📰',
+        color: '#c9542a',
+        headline: `${companyName} ships first ${getCategory(latest.category).name} — "${latest.name}"`,
+        excerpt: `Analysts call it a solid ${latest.node} entry. ${latest.perfScore} pts performance.`,
+        time: age <= 1 ? 'Just now' : `${age} months ago`,
+      });
+    }
+  }
+
+  // 2. Market share milestone
+  const share = state.marketShare || 0;
+  if (share >= 0.15) {
+    items.push({
+      outlet: 'Silicon Report',
+      icon: '📊',
+      color: '#7a5ba8',
+      headline: `${companyName} now controls ${(share * 100).toFixed(1)}% of the semiconductor market`,
+      excerpt: `Steady growth puts pressure on established rivals.`,
+      time: 'Recent',
+    });
+  } else if (share >= 0.05) {
+    items.push({
+      outlet: 'Silicon Report',
+      icon: '📊',
+      color: '#7a5ba8',
+      headline: `${companyName} breaks into double-digit territory at ${(share * 100).toFixed(1)}%`,
+      excerpt: `A newcomer with real momentum.`,
+      time: 'Recent',
+    });
+  }
+
+  // 3. Revenue milestone
+  const rev = state.totalRevenue || 0;
+  if (rev >= 100000000) {
+    items.push({
+      outlet: 'Fortune Tech',
+      icon: '💼',
+      color: '#3d8b5f',
+      headline: `${companyName} crosses ${formatMoneyShort(rev)} in lifetime revenue`,
+      excerpt: `A giant is forming. Investors take notice.`,
+      time: 'This quarter',
+    });
+  } else if (rev >= 10000000) {
+    items.push({
+      outlet: 'Fortune Tech',
+      icon: '💼',
+      color: '#3d8b5f',
+      headline: `${companyName} passes ${formatMoneyShort(rev)} — a serious player emerges`,
+      excerpt: `Silicon Valley is watching.`,
+      time: 'This quarter',
+    });
+  } else if (rev >= 1000000) {
+    items.push({
+      outlet: 'Business Insider',
+      icon: '💼',
+      color: '#3d8b5f',
+      headline: `${companyName} joins the million-dollar club at ${formatMoneyShort(rev)}`,
+      excerpt: `A small team making real money.`,
+      time: 'Recently',
+    });
+  }
+
+  // 4. Team growth
+  if (teamSize >= 20) {
+    items.push({
+      outlet: 'Talent Weekly',
+      icon: '👥',
+      color: '#b8852b',
+      headline: `${companyName} now employs ${teamSize} engineers`,
+      excerpt: `Aggressive hiring signals big ambitions.`,
+      time: 'This month',
+    });
+  } else if (teamSize >= 10) {
+    items.push({
+      outlet: 'Talent Weekly',
+      icon: '👥',
+      color: '#b8852b',
+      headline: `${companyName} grows engineering team to ${teamSize}`,
+      excerpt: `Scaling up for the next big launch.`,
+      time: 'This month',
+    });
+  }
+
+  // 5. Node advancement
+  const node = state.currentNode;
+  if (node !== '350nm') {
+    items.push({
+      outlet: 'Node Watch',
+      icon: '⚗️',
+      color: '#2e8391',
+      headline: `${companyName} achieves ${node} process milestone`,
+      excerpt: `In-house research pays off with a smaller, denser node.`,
+      time: 'Recent',
+    });
+  }
+
+  // 6. Products count
+  if (launched.length >= 5) {
+    items.push({
+      outlet: 'Product Review',
+      icon: '🛍️',
+      color: '#c47a2e',
+      headline: `${launched.length} products in ${companyName}'s lineup`,
+      excerpt: `Breadth across categories — the company is diversifying.`,
+      time: 'Ongoing',
+    });
+  }
+
+  // Fallback for early game
+  if (items.length === 0) {
+    items.push({
+      outlet: 'TechWire Daily',
+      icon: '📰',
+      color: '#c9542a',
+      headline: `${companyName} opens its doors in 1995`,
+      excerpt: `A small startup with big plans. Time will tell.`,
+      time: 'Just now',
+    });
+  }
+
+  return items.slice(0, 3);
 }
 
 // =========================================================
@@ -48,7 +185,7 @@ function showDashboard() {
   const doneProjects = state.projects.filter(p => p.status === 'done');
   const hist = state.history || {};
 
-  // ===== Monthly revenue (this turn) =====
+  // ===== Revenue =====
   const revPerTurn = hist.revPerTurn && hist.revPerTurn.length
     ? hist.revPerTurn[hist.revPerTurn.length - 1]
     : calcPassiveIncome(state);
@@ -77,65 +214,148 @@ function showDashboard() {
 
   const myRank = allCompanies.findIndex(c => c.isPlayer) + 1;
   const leader = allCompanies[0];
-  const second = allCompanies[1];
   const gapToLeader = leader.revenue - revPerTurn;
-  const gapToSecond = second && !second.isPlayer ? second.revenue - revPerTurn : 0;
 
   // ===== Profit chart data =====
   const profitSeries = (hist.profit && hist.profit.length >= 2)
     ? hist.profit.slice(-12)
-    : [profitPerTurn, profitPerTurn]; // fallback
-
+    : [profitPerTurn, profitPerTurn];
   const peakProfit = Math.max(...profitSeries);
-  const minProfit = Math.min(...profitSeries);
   const peakIdx = profitSeries.indexOf(peakProfit);
 
   // ===== Lineup =====
   const lineupProducts = launched.slice(-8).reverse();
   const totalProductRev = launched.reduce((s, p) => s + (p.revenue || 0), 0);
 
+  // ===== Media + latest product =====
+  const mediaItems = generateMediaCoverage();
+  const latestProduct = launched[launched.length - 1];
+
   setPanel('Home', `Turn ${state.turn} · ${formatDate(state.tahun, state.bulan)}`, `
 
-    <!-- ============ RANK CARD ============ -->
-    <div class="rank-card">
-      <div class="rank-top">
-        <div class="rank-number">
-          <span class="hash">#</span><span class="num">${myRank}</span>
-        </div>
-        <div class="rank-company">
-          <div class="rank-name-row">
-            <span class="rank-dot" style="background: var(--accent);"></span>
-            <span class="rank-name">${escapeHtml(state.companyName || 'Founder Companies')}</span>
-            <span class="rank-you">YOU</span>
+    <!-- ============ SWIPEABLE CAROUSEL ============ -->
+    <div class="home-carousel">
+      <div class="carousel-track" id="home-carousel">
+
+        <!-- Slide 1: Rank -->
+        <div class="carousel-slide">
+          <div class="rank-card">
+            <div class="rank-top">
+              <div class="rank-number">
+                <span class="hash">#</span><span class="num">${myRank}</span>
+              </div>
+              <div class="rank-company">
+                <div class="rank-name-row">
+                  <span class="rank-dot" style="background: var(--accent);"></span>
+                  <span class="rank-name">${escapeHtml(state.companyName || 'Founder Companies')}</span>
+                  <span class="rank-you">YOU</span>
+                </div>
+                <div class="rank-sub">${formatMoneyShort(revPerTurn)}/mo · of ${allCompanies.length} companies</div>
+              </div>
+            </div>
+
+            <div class="rank-chips">
+              ${myRank > 1 ? `
+                <div class="chip chip-bad">▼ ${formatMoneyShort(gapToLeader)}/mo behind ${escapeHtml(leader.name)}</div>
+              ` : `
+                <div class="chip chip-good">▲ Industry leader</div>
+              `}
+              <div class="chip chip-neutral">Market share ${(playerShare * 100).toFixed(1)}%</div>
+            </div>
+
+            <div class="leaderboard">
+              ${allCompanies.slice(0, 3).map((c, i) => `
+                <div class="lb-row ${c.isPlayer ? 'is-you' : ''}">
+                  <span class="lb-rank">${i + 1}</span>
+                  <span class="lb-dot" style="background:${c.isPlayer ? 'var(--accent)' : (c.color || 'var(--fg-3)')}"></span>
+                  <span class="lb-name">${escapeHtml(c.name)}</span>
+                  <span class="lb-value">${formatMoneyShort(c.revenue)}/mo</span>
+                </div>
+              `).join('')}
+            </div>
           </div>
-          <div class="rank-sub">${formatMoneyShort(revPerTurn)}/mo · of ${allCompanies.length} companies</div>
         </div>
+
+        <!-- Slide 2: Media coverage -->
+        <div class="carousel-slide">
+          <div class="media-card">
+            <div class="media-head">
+              <div class="media-eyebrow">Media coverage</div>
+              <div class="media-sub">${mediaItems.length} recent article${mediaItems.length === 1 ? '' : 's'}</div>
+            </div>
+            <div class="media-list">
+              ${mediaItems.map(m => `
+                <div class="media-item">
+                  <div class="media-item-head">
+                    <div class="media-outlet">
+                      <span class="media-icon">${m.icon}</span>
+                      <span class="media-outlet-name" style="color:${m.color}">${escapeHtml(m.outlet)}</span>
+                    </div>
+                    <div class="media-time">${escapeHtml(m.time)}</div>
+                  </div>
+                  <div class="media-headline">${escapeHtml(m.headline)}</div>
+                  <div class="media-excerpt">${escapeHtml(m.excerpt)}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 3: Latest product -->
+        <div class="carousel-slide">
+          ${latestProduct ? `
+            <div class="latest-card">
+              <div class="latest-head">
+                <div class="latest-eyebrow">Latest product</div>
+                <div class="latest-badge" style="background:${categoryColor(latestProduct.category)}20;color:${categoryColor(latestProduct.category)}">
+                  ${getCategory(latestProduct.category).name}
+                </div>
+              </div>
+              <div class="latest-body">
+                <div class="latest-art">
+                  ${renderBoxArt(latestProduct)}
+                </div>
+                <div class="latest-info">
+                  <div class="latest-name">${escapeHtml(latestProduct.name)}</div>
+                  <div class="latest-node">${latestProduct.node} · ${getSegment(latestProduct.segment)?.name || 'General'}</div>
+                  <div class="latest-stats">
+                    <div class="latest-stat">
+                      <div class="ls-label">Performance</div>
+                      <div class="ls-value">${latestProduct.perfScore} pts</div>
+                    </div>
+                    <div class="latest-stat">
+                      <div class="ls-label">TDP</div>
+                      <div class="ls-value">${latestProduct.tdp}W</div>
+                    </div>
+                    <div class="latest-stat">
+                      <div class="ls-label">Price</div>
+                      <div class="ls-value">$${latestProduct.price}</div>
+                    </div>
+                    <div class="latest-stat">
+                      <div class="ls-label">Units</div>
+                      <div class="ls-value">${(latestProduct.sales || 0).toLocaleString('en-US')}</div>
+                    </div>
+                  </div>
+                  <button class="latest-cta" onclick="renderPanel('market')">View in Market →</button>
+                </div>
+              </div>
+            </div>
+          ` : `
+            <div class="latest-card latest-empty">
+              <div class="latest-empty-icon">📦</div>
+              <div class="latest-empty-title">No products yet</div>
+              <div class="latest-empty-desc">Design and launch your first chip to see it here.</div>
+              <button class="btn primary" onclick="if(typeof openDesignerCategoryChooser==='function')openDesignerCategoryChooser()">Open Designer</button>
+            </div>
+          `}
+        </div>
+
       </div>
 
-      <div class="rank-chips">
-        ${myRank > 1 ? `
-          <div class="chip chip-bad">
-            ▼ ${formatMoneyShort(gapToLeader)}/mo behind ${escapeHtml(leader.name)}
-          </div>
-        ` : `
-          <div class="chip chip-good">
-            ▲ Industry leader
-          </div>
-        `}
-        <div class="chip chip-neutral">
-          Market share ${(playerShare * 100).toFixed(1)}%
-        </div>
-      </div>
-
-      <div class="leaderboard">
-        ${allCompanies.slice(0, 3).map((c, i) => `
-          <div class="lb-row ${c.isPlayer ? 'is-you' : ''}">
-            <span class="lb-rank">${i + 1}</span>
-            <span class="lb-dot" style="background:${c.isPlayer ? 'var(--accent)' : (c.color || 'var(--fg-3)')}"></span>
-            <span class="lb-name">${escapeHtml(c.name)}</span>
-            <span class="lb-value">${formatMoneyShort(c.revenue)}/mo</span>
-          </div>
-        `).join('')}
+      <div class="carousel-dots" id="carousel-dots">
+        <span class="dot active" data-dot="0"></span>
+        <span class="dot" data-dot="1"></span>
+        <span class="dot" data-dot="2"></span>
       </div>
     </div>
 
@@ -159,18 +379,15 @@ function showDashboard() {
           </linearGradient>
         </defs>
 
-        <!-- Reference lines -->
         <line x1="20" y1="45" x2="580" y2="45" stroke="var(--line)" stroke-width="0.5" stroke-dasharray="2 6" opacity="0.6"/>
         <line x1="20" y1="90" x2="580" y2="90" stroke="var(--line)" stroke-width="0.5" stroke-dasharray="2 6" opacity="0.6"/>
         <line x1="20" y1="135" x2="580" y2="135" stroke="var(--line)" stroke-width="0.5" stroke-dasharray="2 6" opacity="0.6"/>
 
-        <!-- Area + line -->
         ${profitSeries.length >= 2 ? `
           <path d="${svgAreaPath(profitSeries, 600, 180, 20)}" fill="url(#profitFill)"/>
           <path d="${svgLinePath(profitSeries, 600, 180, 20)}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
         ` : ''}
 
-        <!-- Peak marker -->
         ${profitSeries.length >= 2 && peakIdx >= 0 ? (() => {
           const stepX = (600 - 40) / (profitSeries.length - 1);
           const x = 20 + peakIdx * stepX;
@@ -182,7 +399,6 @@ function showDashboard() {
           `;
         })() : ''}
 
-        <!-- Current marker -->
         ${profitSeries.length >= 2 ? (() => {
           const last = profitSeries[profitSeries.length - 1];
           const range = (Math.max(...profitSeries) - Math.min(...profitSeries)) || 1;
@@ -201,7 +417,7 @@ function showDashboard() {
       </div>
     </div>
 
-    <!-- ============ YOUR LINEUP ============ -->
+    <!-- ============ LINEUP ============ -->
     ${lineupProducts.length > 0 ? `
       <div class="lineup-section">
         <div class="lineup-head">
@@ -252,7 +468,7 @@ function showDashboard() {
       </div>
     </div>
 
-    <!-- ============ ACTIVE R&D ============ -->
+    <!-- ============ READY TO LAUNCH ============ -->
     ${doneProjects.length > 0 ? `
       <div class="section-title">Ready to launch · ${doneProjects.length}</div>
       ${doneProjects.map(p => `
@@ -266,6 +482,7 @@ function showDashboard() {
       `).join('')}
     ` : ''}
 
+    <!-- ============ ACTIVE R&D ============ -->
     ${activeProjects.length > 0 ? `
       <div class="section-title">Active R&D · ${activeProjects.length}</div>
       ${activeProjects.map(p => renderProjectMini(p)).join('')}
@@ -287,16 +504,57 @@ function showDashboard() {
 
   `);
 
-  // Bind lineup cards
+  // ===== Bind carousel =====
+  bindHomeCarousel();
+
+  // ===== Bind lineup cards =====
   document.querySelectorAll('.lineup-card').forEach(card => {
-    card.addEventListener('click', () => {
-      renderPanel('market');
-    });
+    card.addEventListener('click', () => renderPanel('market'));
   });
 }
 
 // =========================================================
-// BOX ART — SVG mockup of product packaging
+// CAROUSEL BINDING
+// =========================================================
+function bindHomeCarousel() {
+  const track = document.getElementById('home-carousel');
+  const dotsWrap = document.getElementById('carousel-dots');
+  if (!track || !dotsWrap) return;
+
+  const dots = Array.from(dotsWrap.querySelectorAll('.dot'));
+
+  const updateDots = () => {
+    const slideW = track.clientWidth;
+    if (slideW === 0) return;
+    const page = Math.round(track.scrollLeft / slideW);
+    dots.forEach((d, i) => d.classList.toggle('active', i === page));
+  };
+
+  // Update on scroll (throttled)
+  let ticking = false;
+  track.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        updateDots();
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+
+  // Click dot to jump
+  dots.forEach((dot, i) => {
+    dot.addEventListener('click', () => {
+      track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' });
+    });
+  });
+
+  // Initial position sync
+  requestAnimationFrame(updateDots);
+}
+
+// =========================================================
+// BOX ART
 // =========================================================
 function renderBoxArt(p) {
   const catColors = {
@@ -312,22 +570,14 @@ function renderBoxArt(p) {
 
   return `
     <svg class="box-art" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
-      <!-- Base shadow -->
       <ellipse cx="50" cy="116" rx="34" ry="3" fill="rgba(60,50,35,0.15)"/>
-      <!-- Box face -->
       <rect x="12" y="14" width="76" height="100" rx="3" fill="#1c1814"/>
-      <!-- Box top edge highlight -->
       <rect x="12" y="14" width="76" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>
-      <!-- Logo ring -->
       <circle cx="50" cy="52" r="22" fill="none" stroke="${c}" stroke-width="2"/>
       <circle cx="50" cy="52" r="16" fill="none" stroke="${c}" stroke-width="1" opacity="0.5"/>
-      <!-- Center mark -->
       <circle cx="50" cy="52" r="6" fill="${c}" opacity="0.85"/>
-      <!-- Category icon -->
       <text x="50" y="56" text-anchor="middle" font-size="9" font-weight="700" fill="white" font-family="monospace">${p.category.toUpperCase().slice(0,2)}</text>
-      <!-- Product name -->
       <text x="50" y="88" text-anchor="middle" font-size="8" font-weight="700" fill="white" font-family="sans-serif">${escapeHtml(shortName)}</text>
-      <!-- Tier badge -->
       <rect x="34" y="96" width="32" height="12" rx="2" fill="${c}"/>
       <text x="50" y="105" text-anchor="middle" font-size="7" font-weight="800" fill="white" font-family="monospace">${tier}</text>
     </svg>
@@ -379,4 +629,4 @@ function iconFor(cat) {
     smartphone: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',
   }[cat] || '<rect x="5" y="5" width="14" height="14" rx="2"/>';
   return `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" width="14" height="14">${inner}</svg>`;
-}
+                                                                    }
