@@ -1,7 +1,6 @@
 // js/ui/menu.js
-// Menu controller — defensive version with on-page error reporting.
+// Menu controller — Option A flow: Main → Company → Game.
 
-// ===== Fallback difficulties (used if difficulties.js not loaded) =====
 const _FALLBACK_DIFFICULTIES = [
   { id:'easy',   name:'Easy',   rivalAggression:0.7, rivalReactionTurns:3, rivalAnswerScope:1, playerPenaltyMult:0.7, desc:'Rivals take their time. Your breakthroughs land before they can respond.' },
   { id:'normal', name:'Normal', rivalAggression:1.0, rivalReactionTurns:2, rivalAnswerScope:1, playerPenaltyMult:1.0, desc:'Rivals read the market and field a real answer to your strongest line.' },
@@ -16,23 +15,16 @@ function _getDifficulty(id) {
   return list.find(d => d.id === id) || list[1];
 }
 
-// ===== Visible error banner (on-page, not just console) =====
 function _showMenuError(stage, err) {
   console.error('[Menu Error @ ' + stage + ']', err);
   let banner = document.getElementById('menu-error-banner');
   if (!banner) {
     banner = document.createElement('div');
     banner.id = 'menu-error-banner';
-    banner.style.cssText = `
-      position:fixed; top:0; left:0; right:0; z-index:9999;
-      background:#f85149; color:white; padding:12px 16px;
-      font-family:monospace; font-size:12px; line-height:1.5;
-      box-shadow:0 4px 20px rgba(0,0,0,0.4);
-      white-space:pre-wrap; word-break:break-word;
-    `;
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#f85149;color:white;padding:12px 16px;font-family:monospace;font-size:12px;line-height:1.5;box-shadow:0 4px 20px rgba(0,0,0,0.4);white-space:pre-wrap;word-break:break-word;';
     document.body.appendChild(banner);
   }
-  banner.textContent = `MENU ERROR [${stage}]\n${err && err.message ? err.message : err}\n\nCheck DevTools Console for details.`;
+  banner.textContent = `MENU ERROR [${stage}]\n${err && err.message ? err.message : err}\n\nCheck DevTools Console.`;
 }
 
 // ===== Screen navigation =====
@@ -77,27 +69,48 @@ function renderArchetypeCards() {
   if (!grid) return;
 
   if (typeof ARCHETYPES === 'undefined') {
-    _showMenuError('renderArchetypeCards', new Error('ARCHETYPES not loaded — check js/data/archetypes.js'));
+    _showMenuError('renderArchetypeCards', new Error('ARCHETYPES not loaded'));
     return;
   }
 
-  grid.innerHTML = ARCHETYPES.map(a => `
-    <div class="company-card" data-arch="${a.id}" style="--comp-color:${a.color}; --comp-soft:${a.colorSoft}">
-      <div class="comp-top">
-        <div class="comp-icon">${archIcon(a.icon)}</div>
-        <div class="comp-tags">
-          <span class="comp-tag">${a.roleTag}</span>
-          <span class="comp-tag sub">${a.subTag}</span>
+  // Sort: Founder Semiconductor first (recommended), rest in original order
+  const sorted = [...ARCHETYPES].sort((a, b) => {
+    if (a.id === 'founder') return -1;
+    if (b.id === 'founder') return 1;
+    return 0;
+  });
+
+  grid.innerHTML = sorted.map(a => {
+    const isRecommended = a.id === 'founder';
+    return `
+      <div class="company-card" data-arch="${a.id}" style="--comp-color:${a.color}; --comp-soft:${a.colorSoft}">
+        ${isRecommended ? `
+          <div style="
+            position:absolute; top:-1px; right:14px;
+            background:${a.color}; color:white;
+            font-size:9px; font-weight:800;
+            letter-spacing:0.14em; text-transform:uppercase;
+            padding:4px 10px 5px;
+            border-radius:0 0 8px 8px;
+            z-index:2;
+          ">Recommended</div>
+        ` : ''}
+        <div class="comp-top">
+          <div class="comp-icon">${archIcon(a.icon)}</div>
+          <div class="comp-tags">
+            <span class="comp-tag">${a.roleTag}</span>
+            <span class="comp-tag sub">${a.subTag}</span>
+          </div>
         </div>
+        <div class="comp-name">${escapeHtml(a.name)}</div>
+        <div class="comp-tagline">${escapeHtml(a.tagline)}</div>
+        <div class="comp-desc">${escapeHtml(a.desc)}</div>
+        <span class="comp-cta">Tap for details
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </span>
       </div>
-      <div class="comp-name">${escapeHtml(a.name)}</div>
-      <div class="comp-tagline">${escapeHtml(a.tagline)}</div>
-      <div class="comp-desc">${escapeHtml(a.desc)}</div>
-      <span class="comp-cta">Tap for details
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
-      </span>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   grid.querySelectorAll('[data-arch]').forEach(card => {
     card.addEventListener('click', () => openArchetypeModal(card.dataset.arch));
@@ -161,7 +174,7 @@ function renderArchetypeModal(arch) {
         </div>
 
         <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--menu-text-soft);margin:0 0 10px;">Difficulty</div>
-        <div id="diff-tabs" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;margin-bottom:14px;background:var(--menu-bg-2);border-radius:12px;padding:4px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;margin-bottom:14px;background:var(--menu-bg-2);border-radius:12px;padding:4px;">
           ${diffs.map(d => `
             <button class="diff-tab" data-diff="${d.id}" style="padding:10px 8px;border:none;cursor:pointer;border-radius:9px;font-size:13px;font-weight:600;transition:all 0.15s;background:${d.id === modalDifficulty ? arch.color : 'transparent'};color:${d.id === modalDifficulty ? 'white' : 'var(--menu-text-dim)'};">${d.name}</button>
           `).join('')}
@@ -286,12 +299,12 @@ function initMenu() {
       });
     }
 
-    // Bind New Game card
+    // OPTION A: New Game → directly to Company selection (skip Mode screen)
     document.querySelectorAll('.menu-card[data-action="new-game"]').forEach(c => {
-      c.addEventListener('click', () => showMenuScreen('mode'));
+      c.addEventListener('click', () => showMenuScreen('company'));
     });
 
-    // Bind mode cards
+    // Mode cards kept for backward compatibility (in case HTML still has them)
     document.querySelectorAll('.mode-card').forEach(c => {
       c.addEventListener('click', () => {
         const mode = c.dataset.mode;
@@ -310,7 +323,12 @@ function initMenu() {
 
     // Help button
     document.getElementById('menu-help-btn')?.addEventListener('click', () => {
-      alert('Each archetype has unique bonuses. Difficulty scales how aggressively rivals respond to your launches.');
+      alert(
+        'Each archetype has unique bonuses that affect chip performance, ' +
+        'research cost, and RP gain. Pick one that matches your playstyle.\n\n' +
+        'Founder Semiconductor is recommended for first-time players.\n\n' +
+        'Difficulty scales how aggressively rivals respond to your launches.'
+      );
     });
 
     // Load button
@@ -323,16 +341,14 @@ function initMenu() {
       loadAndBootGame();
     });
 
-    // Render cards
     renderArchetypeCards();
 
-    // Global ESC
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') closeArchetypeModal();
     });
 
-    console.log('[Menu] initialized successfully');
+    console.log('[Menu] initialized (Option A flow)');
   } catch (e) {
     _showMenuError('initMenu', e);
   }
-}
+                            }
