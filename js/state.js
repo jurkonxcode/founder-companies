@@ -2,7 +2,7 @@
 // Global state, save/load, auto-save.
 
 const SAVE_KEY = 'founder-companies-v2';
-const SAVE_VERSION = 3;
+const SAVE_VERSION = 4;
 const AUTO_SAVE_INTERVAL = 30000;
 
 let state = null;
@@ -26,8 +26,8 @@ function createFounderEngineer(name, specialty) {
     name: name || 'You (Founder)',
     level: 'A',
     specialty: specialty || 'microarch',
-    salary: 0,          // founders don't draw salary
-    loyalty: 100,       // founders don't quit
+    salary: 0,
+    loyalty: 100,
     hiredYear: 1995,
     hiredMonth: 1,
     isFounder: true,
@@ -40,7 +40,6 @@ function createFounderEngineer(name, specialty) {
 function createInitialState(archetype = null) {
   const arch = archetype || getArchetype('founder');
   const startingCash = arch?.bonuses?.startingCash || 5000;
-
   const founder = createFounderEngineer(arch ? arch.name : 'Founder', 'microarch');
 
   return {
@@ -57,7 +56,7 @@ function createInitialState(archetype = null) {
 
     marketShare: 0.02,
 
-    team: [founder],           // ← founder included
+    team: [founder],
     pool: generatePool(6),
 
     projects: [],
@@ -70,7 +69,13 @@ function createInitialState(archetype = null) {
     totalProducts: 0,
     debt: 0,
 
-    history: { cash: [], share: [], revenue: [] },
+    history: {
+      cash: [],
+      share: [],
+      revenue: [],
+      revPerTurn: [],
+      profit: [],
+    },
 
     archetype: arch ? arch.id : 'founder',
     companyName: arch ? arch.name : 'Founder Companies',
@@ -78,6 +83,11 @@ function createInitialState(archetype = null) {
 
     gameOver: false,
     founded: { tahun: 1995, bulan: 1 },
+
+    _lastTotalRevenue: 0,
+    _processing: false,
+    _lastSpeed: 0,
+    speed: 0,
   };
 }
 
@@ -90,17 +100,7 @@ function initState() {
   const loaded = loadGame();
   if (loaded) {
     state = loaded;
-    if (!state.archetype) state.archetype = 'founder';
-    if (!state.triggeredEvents) state.triggeredEvents = [];
-    if (!state.pool || state.pool.length === 0) state.pool = generatePool(6);
-    if (!state.history) state.history = { cash: [], share: [], revenue: [] };
-
-    // Migration: ensure founder exists in team
-    if (!state.team.some(e => e.isFounder)) {
-      const arch = getArchetype(state.archetype) || { name: 'Founder' };
-      state.team.unshift(createFounderEngineer(state.companyName || arch.name, 'microarch'));
-    }
-
+    migrateState(state);
     addLog('Save loaded. Resuming campaign...', 'info');
   } else {
     state = createInitialState();
@@ -113,7 +113,6 @@ function initStateWithArchetype(arch, options = {}) {
   if (options.tahun) state.tahun = options.tahun;
   if (options.uang) state.uang = options.uang;
 
-  // Custom founder name from company name
   if (options.companyName) {
     state.companyName = options.companyName;
     const f = state.team.find(e => e.isFounder);
@@ -122,8 +121,50 @@ function initStateWithArchetype(arch, options = {}) {
 
   addLog(`${arch.name} founded in ${formatDate(state.tahun, state.bulan)}.`, 'milestone');
   addLog(`Starting cash: ${formatMoneyShort(state.uang)}. Node: 350nm.`, 'info');
-  addLog(`You are the first engineer. Hire more to scale R&D.`, 'info');
+  addLog('You are the first engineer. Hire more to scale R&D.', 'info');
   startAutoSave();
+}
+
+// =========================================================
+// MIGRATION — patch old saves to new schema
+// =========================================================
+function migrateState(s) {
+  if (!s) return;
+
+  if (!s.archetype) s.archetype = 'founder';
+  if (!s.triggeredEvents) s.triggeredEvents = [];
+  if (!s.pool || s.pool.length === 0) s.pool = generatePool(6);
+  if (!s.difficulty) s.difficulty = 'normal';
+  if (!s.companyName) {
+    const arch = getArchetype(s.archetype);
+    s.companyName = arch ? arch.name : 'Founder Companies';
+  }
+
+  // History migration
+  if (!s.history) {
+    s.history = { cash: [], share: [], revenue: [], revPerTurn: [], profit: [] };
+  }
+  if (!s.history.cash) s.history.cash = [];
+  if (!s.history.share) s.history.share = [];
+  if (!s.history.revenue) s.history.revenue = [];
+  if (!s.history.revPerTurn) s.history.revPerTurn = [];
+  if (!s.history.profit) s.history.profit = [];
+
+  // Ensure team array exists
+  if (!s.team) s.team = [];
+
+  // Ensure founder exists
+  if (!s.team.some(e => e.isFounder)) {
+    const arch = getArchetype(s.archetype) || { name: 'Founder' };
+    s.team.unshift(createFounderEngineer(s.companyName || arch.name, 'microarch'));
+  }
+
+  // Internal runtime flags — always reset on load
+  s._processing = false;
+  s._lastTotalRevenue = s.totalRevenue || 0;
+  s.speed = 0;
+
+  return s;
 }
 
 // =========================================================
@@ -150,7 +191,10 @@ function archPerfMult(category) {
 // =========================================================
 function saveGame(silent = false) {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    // Strip runtime-only flags before saving
+    const snapshot = JSON.parse(JSON.stringify(state));
+    delete snapshot._processing;
+    localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot));
     if (!silent) addLog('Game saved.', 'info');
     return true;
   } catch (e) {
@@ -165,10 +209,13 @@ function loadGame() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    if (data.version !== SAVE_VERSION) {
-      console.warn('Save version mismatch — discarding old save.');
+
+    // Accept any version ≥ 2 — migrator will patch it forward
+    if (!data.version || data.version < 2) {
+      console.warn('Save too old — discarding.');
       return null;
     }
+    data.version = SAVE_VERSION; // upgrade in place
     return data;
   } catch (e) {
     console.error('Load error:', e);
