@@ -1,22 +1,26 @@
 // js/ui/panelMarket.js
-// Market modal — tile-driven hub (Sales / Demand / Competitors / Press).
+// Market modal — tile-driven hub. Uses event delegation (bind once).
 
 let marketView = 'menu';
 
 // =========================================================
-// OPEN / CLOSE
+// OPEN / CLOSE / NAVIGATE
 // =========================================================
 function openMarketModal() {
   const modal = document.getElementById('market-modal');
-  if (!modal) {
-    alert('Market modal container missing.');
-    return;
-  }
+  if (!modal) { alert('Market modal container missing.'); return; }
   if (!state) return;
+
   marketView = 'menu';
   renderMarketModal();
   modal.classList.add('active');
   document.body.style.overflow = 'hidden';
+
+  // Bind once — idempotent
+  if (modal.dataset.bound !== '1') {
+    modal.dataset.bound = '1';
+    modal.addEventListener('click', marketModalClick);
+  }
 }
 
 function closeMarketModal() {
@@ -36,8 +40,37 @@ function backToMarketMenu() {
   renderMarketModal();
 }
 
-// Legacy alias — some panels may call renderPanel('market')
+// Legacy alias (some code may call renderPanel('market'))
 function showMarket() { openMarketModal(); }
+
+// =========================================================
+// EVENT DELEGATION
+// =========================================================
+function marketModalClick(e) {
+  const modal = document.getElementById('market-modal');
+
+  // Click on backdrop (outside sheet) → close
+  if (e.target === modal) { closeMarketModal(); return; }
+
+  // Close button (any [data-market-close] element)
+  if (e.target.closest('[data-market-close]')) {
+    closeMarketModal();
+    return;
+  }
+
+  // Back button (any [data-market-back] element)
+  if (e.target.closest('[data-market-back]')) {
+    backToMarketMenu();
+    return;
+  }
+
+  // Tile — switch sub-view
+  const tile = e.target.closest('[data-market-view]');
+  if (tile) {
+    goMarket(tile.dataset.marketView);
+    return;
+  }
+}
 
 // =========================================================
 // RENDER
@@ -46,9 +79,11 @@ function renderMarketModal() {
   const modal = document.getElementById('market-modal');
   if (!modal) return;
   modal.innerHTML = marketView === 'menu' ? renderMarketMenu() : renderMarketSub(marketView);
-  bindMarketEvents();
 }
 
+// =========================================================
+// MENU VIEW
+// =========================================================
 function renderMarketMenu() {
   const launched = state.products.filter(p => p.launched);
   const activeComps = (typeof getActiveCompetitors === 'function') ? getActiveCompetitors(state.tahun).length : 0;
@@ -61,7 +96,7 @@ function renderMarketMenu() {
           <div class="market-sheet-eyebrow">Market</div>
           <h3>Business intelligence</h3>
         </div>
-        <button class="market-sheet-close" id="market-close">✕</button>
+        <button class="market-sheet-close" data-market-close aria-label="Close">✕</button>
       </div>
       <div class="market-sheet-body">
         <p class="market-sheet-sub">Sales results, demand, competitors, and press.</p>
@@ -70,8 +105,7 @@ function renderMarketMenu() {
           <button class="profile-tile" data-market-view="sales" style="--tile-color:#c9542a">
             <div class="profile-tile-icon" style="background:rgba(201,84,42,0.12);color:#c9542a">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 17l5-5 4 4 8-8"/>
-                <path d="M14 8h6v6"/>
+                <path d="M3 17l5-5 4 4 8-8"/><path d="M14 8h6v6"/>
               </svg>
             </div>
             <div class="profile-tile-label">Sales</div>
@@ -81,8 +115,7 @@ function renderMarketMenu() {
           <button class="profile-tile" data-market-view="demand" style="--tile-color:#2e8391">
             <div class="profile-tile-icon" style="background:rgba(46,131,145,0.12);color:#2e8391">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 3v18h18"/>
-                <path d="M7 14l3-4 3 3 5-7"/>
+                <path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 5-7"/>
               </svg>
             </div>
             <div class="profile-tile-label">Demand</div>
@@ -131,7 +164,7 @@ function renderMarketMenu() {
 }
 
 // =========================================================
-// SUB-VIEWS
+// SUB-VIEW DISPATCHER
 // =========================================================
 function renderMarketSub(view) {
   const map = {
@@ -147,19 +180,21 @@ function renderMarketSub(view) {
 function renderSubHeader(title, subtitle) {
   return `
     <div class="profile-sub-head">
-      <button class="profile-sub-back" id="market-back">
+      <button class="profile-sub-back" data-market-back aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><path d="m15 18-6-6 6-6"/></svg>
       </button>
       <div class="profile-sub-title">
         <div class="profile-sub-eyebrow">${escapeHtml(subtitle)}</div>
         <h3>${escapeHtml(title)}</h3>
       </div>
-      <button class="profile-sub-close" id="market-close">✕</button>
+      <button class="profile-sub-close" data-market-close aria-label="Close">✕</button>
     </div>
   `;
 }
 
-// ===== SALES =====
+// =========================================================
+// SALES
+// =========================================================
 function renderMarketSales() {
   const launched = state.products.filter(p => p.launched);
   if (launched.length === 0) {
@@ -221,7 +256,9 @@ function renderMarketSales() {
   `;
 }
 
-// ===== DEMAND =====
+// =========================================================
+// DEMAND
+// =========================================================
 function renderMarketDemand() {
   const segs = (typeof getAvailableSegments === 'function') ? getAvailableSegments(state.tahun) : [];
   return `
@@ -254,7 +291,9 @@ function renderMarketDemand() {
   `;
 }
 
-// ===== COMPETITORS =====
+// =========================================================
+// COMPETITORS
+// =========================================================
 function renderMarketCompetitors() {
   const breakdown = (typeof getMarketBreakdown === 'function') ? getMarketBreakdown(state) : { competitors: [], others: { share: 0 } };
   const active = (typeof getActiveCompetitors === 'function') ? getActiveCompetitors(state.tahun) : [];
@@ -291,9 +330,11 @@ function renderMarketCompetitors() {
   `;
 }
 
-// ===== PRESS =====
+// =========================================================
+// PRESS
+// =========================================================
 function renderMarketPress() {
-  const notifs = (state.notifications || []).slice(0, 30);
+  const notifs = (state.notifications || []).slice(0, 40);
   const catMeta = (typeof HEADLINE_CATEGORIES !== 'undefined') ? HEADLINE_CATEGORIES : {};
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -327,29 +368,12 @@ function renderMarketPress() {
 }
 
 // =========================================================
-// BINDINGS
+// ESC HANDLER
 // =========================================================
-function bindMarketEvents() {
-  document.getElementById('market-close')?.addEventListener('click', closeMarketModal);
-  document.getElementById('market-back')?.addEventListener('click', backToMarketMenu);
-
-  const modal = document.getElementById('market-modal');
-  modal?.addEventListener('click', (e) => {
-    if (e.target === modal) closeMarketModal();
-  });
-
-  document.querySelectorAll('[data-market-view]').forEach(tile => {
-    tile.addEventListener('click', () => goMarket(tile.dataset.marketView));
-  });
-}
-
-// ESC handler
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    const modal = document.getElementById('market-modal');
-    if (modal && modal.classList.contains('active')) {
-      if (marketView !== 'menu') backToMarketMenu();
-      else closeMarketModal();
-    }
-  }
+  if (e.key !== 'Escape') return;
+  const modal = document.getElementById('market-modal');
+  if (!modal || !modal.classList.contains('active')) return;
+  if (marketView !== 'menu') backToMarketMenu();
+  else closeMarketModal();
 });
