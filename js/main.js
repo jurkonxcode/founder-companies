@@ -1,4 +1,3 @@
-
 // js/main.js
 // Entry point: menu init, game boot, turn loop, speed control.
 
@@ -81,6 +80,11 @@ function nextTurn(fromAuto = false) {
     addLog(`Year ${state.tahun} begins.`, 'info');
   }
 
+  // 1b. Trigger headlines for the new month
+  if (typeof checkMonthHeadlines === 'function') {
+    checkMonthHeadlines(state.tahun, state.bulan);
+  }
+
   // 2. Refresh candidate pool every 6 turns
   if (state.turn % 6 === 0) {
     state.pool = refreshPool(state.pool, state.tahun);
@@ -149,7 +153,7 @@ function nextTurn(fromAuto = false) {
     }
   }
 
-  // 10. Historical event
+  // 10. Historical event (game-world event, not headline)
   const histEv = getHistoricalEvent(state.tahun, state.bulan);
   if (histEv && !state.triggeredEvents.find(e => e.id === histEv.id)) {
     state.triggeredEvents.push({
@@ -199,9 +203,7 @@ function nextTurn(fromAuto = false) {
     return;
   }
 
-  // =========================================================
-  // 15. History — cash, share, revenue, revPerTurn, profit
-  // =========================================================
+  // 15. History
   if (!state.history) {
     state.history = { cash: [], share: [], revenue: [], revPerTurn: [], profit: [] };
   }
@@ -212,18 +214,15 @@ function nextTurn(fromAuto = false) {
   state.history.share.push(parseFloat(state.marketShare.toFixed(4)));
   state.history.revenue.push(Math.round(state.totalRevenue));
 
-  // Revenue this turn = delta of totalRevenue
   const revThisTurn = Math.max(0, state.totalRevenue - (state._lastTotalRevenue || 0));
   state._lastTotalRevenue = state.totalRevenue;
 
-  // Operating cost this turn (for profit calculation)
   const opCostNow = calcOperatingCost(state);
   const profitThisTurn = revThisTurn - opCostNow.total;
 
   state.history.revPerTurn.push(Math.round(revThisTurn));
   state.history.profit.push(Math.round(profitThisTurn));
 
-  // Trim all history arrays to 24 turns
   ['cash', 'share', 'revenue', 'revPerTurn', 'profit'].forEach(k => {
     if (state.history[k] && state.history[k].length > 24) state.history[k].shift();
   });
@@ -355,6 +354,7 @@ function boot() {
   if (typeof updateProfileAvatar === 'function') updateProfileAvatar();
   if (typeof initSystemStatus === 'function') initSystemStatus();
   if (typeof bindNewsDrawer === 'function') bindNewsDrawer();
+  if (typeof bindNotificationBell === 'function') bindNotificationBell();
   renderPanel('dashboard');
   renderAll();
 
