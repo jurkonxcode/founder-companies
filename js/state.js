@@ -2,7 +2,7 @@
 // Global state, save/load, auto-save.
 
 const SAVE_KEY = 'founder-companies-v2';
-const SAVE_VERSION = 4;
+const SAVE_VERSION = 5;
 const AUTO_SAVE_INTERVAL = 30000;
 
 let state = null;
@@ -17,9 +17,6 @@ function getCategory(id) {
     : null;
 }
 
-// =========================================================
-// FOUNDER ENGINEER — you are the first team member
-// =========================================================
 function createFounderEngineer(name, specialty) {
   return {
     id: 'founder',
@@ -64,6 +61,7 @@ function createInitialState(archetype = null) {
 
     log: [],
     triggeredEvents: [],
+    notifications: [],
 
     totalRevenue: 0,
     totalProducts: 0,
@@ -126,7 +124,7 @@ function initStateWithArchetype(arch, options = {}) {
 }
 
 // =========================================================
-// MIGRATION — patch old saves to new schema
+// MIGRATION
 // =========================================================
 function migrateState(s) {
   if (!s) return;
@@ -140,7 +138,6 @@ function migrateState(s) {
     s.companyName = arch ? arch.name : 'Founder Companies';
   }
 
-  // History migration
   if (!s.history) {
     s.history = { cash: [], share: [], revenue: [], revPerTurn: [], profit: [] };
   }
@@ -150,16 +147,14 @@ function migrateState(s) {
   if (!s.history.revPerTurn) s.history.revPerTurn = [];
   if (!s.history.profit) s.history.profit = [];
 
-  // Ensure team array exists
   if (!s.team) s.team = [];
+  if (!s.notifications) s.notifications = [];
 
-  // Ensure founder exists
   if (!s.team.some(e => e.isFounder)) {
     const arch = getArchetype(s.archetype) || { name: 'Founder' };
     s.team.unshift(createFounderEngineer(s.companyName || arch.name, 'microarch'));
   }
 
-  // Internal runtime flags — always reset on load
   s._processing = false;
   s._lastTotalRevenue = s.totalRevenue || 0;
   s.speed = 0;
@@ -191,7 +186,6 @@ function archPerfMult(category) {
 // =========================================================
 function saveGame(silent = false) {
   try {
-    // Strip runtime-only flags before saving
     const snapshot = JSON.parse(JSON.stringify(state));
     delete snapshot._processing;
     localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot));
@@ -209,13 +203,11 @@ function loadGame() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-
-    // Accept any version ≥ 2 — migrator will patch it forward
     if (!data.version || data.version < 2) {
       console.warn('Save too old — discarding.');
       return null;
     }
-    data.version = SAVE_VERSION; // upgrade in place
+    data.version = SAVE_VERSION;
     return data;
   } catch (e) {
     console.error('Load error:', e);
