@@ -2064,3 +2064,289 @@ table td.bad { color: var(--bad); }
   .rank-number .num { font-size: 34px; }
   .rank-name { font-size: 15px; }
    }
+/* =========================================================
+   HOME CAROUSEL — defensive styling
+   ========================================================= */
+.home-carousel {
+  margin-bottom: 16px;
+  position: relative;
+  width: 100%;
+}
+
+.carousel-track {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  gap: 0;
+  margin: 0;
+  padding: 2px 0;
+  width: 100%;
+}
+.carousel-track::-webkit-scrollbar { display: none; height: 0; }
+
+.carousel-slide {
+  flex: 0 0 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  box-sizing: border-box;
+  padding: 0 2px;
+  display: block;
+}
+
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0 4px;
+}
+.carousel-dots .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line-2);
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: pointer;
+  display: inline-block;
+}
+.carousel-dots .dot.active {
+  width: 22px;
+  background: var(--accent);
+}
+
+/* ============ MEDIA CARD ============ */
+.media-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  padding: 20px 20px 14px;
+  box-shadow: var(--shadow-1);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+.media-head { margin-bottom: 14px; }
+.media-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.media-sub {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--fg-0);
+  letter-spacing: -0.01em;
+}
+.media-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+.media-item {
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.media-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.media-outlet {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.media-icon { font-size: 13px; flex-shrink: 0; }
+.media-outlet-name {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.media-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  flex-shrink: 0;
+}
+.media-headline {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg-0);
+  line-height: 1.3;
+  margin-bottom: 3px;
+}
+.media-excerpt {
+  font-size: 12px;
+  color: var(--fg-2);
+  line-height: 1.45;
+}
+
+/* ============ LATEST PRODUCT CARD ============ */
+.latest-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  padding: 20px;
+  box-shadow: var(--shadow-1);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+.latest-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.latest-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.latest-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.latest-body {
+  display: flex;
+  gap: 18px;
+  flex: 1;
+  align-items: flex-start;
+}
+.latest-art {
+  flex-shrink: 0;
+  width: 110px;
+}
+.latest-art .box-art { max-width: 110px; width: 100%; height: auto; }
+.latest-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.latest-name {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fg-0);
+  line-height: 1.1;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.latest-node {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  margin-bottom: 14px;
+}
+.latest-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.latest-stat {
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.ls-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  margin-bottom: 2px;
+}
+.ls-value {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg-0);
+  letter-spacing: -0.01em;
+}
+.latest-cta {
+  margin-top: auto;
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 0;
+  cursor: pointer;
+}
+.latest-cta:hover { text-decoration: underline; }
+
+.latest-empty {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 24px;
+}
+.latest-empty-icon { font-size: 48px; opacity: 0.4; margin-bottom: 12px; }
+.latest-empty-title {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--fg-2);
+  margin-bottom: 6px;
+}
+.latest-empty-desc {
+  font-size: 13px;
+  color: var(--fg-3);
+  line-height: 1.5;
+  max-width: 260px;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 900px) {
+  .media-card, .latest-card { padding: 16px; }
+  .media-headline { font-size: 13.5px; }
+  .media-item { padding: 10px 12px; }
+  .latest-body { gap: 14px; }
+  .latest-art { width: 92px; }
+  .latest-art .box-art { max-width: 92px; }
+  .latest-name { font-size: 19px; }
+  .latest-stat { padding: 7px 9px; }
+  .ls-value { font-size: 13px; }
+  .carousel-dots { padding: 10px 0 2px; }
+}
