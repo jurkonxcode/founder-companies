@@ -98,23 +98,37 @@
         <small id="brand-sub">Semiconductor Empire · 1995</small>
       </div>
     </div>
+
     <div class="stats-strip">
       <div class="stat"><div class="label">Date</div><div class="value" id="stat-date">Jan 1995</div></div>
       <div class="stat"><div class="label">Turn</div><div class="value" id="stat-turn">0</div></div>
-      <div class="stat"><div class="label">Research</div><div class="value" id="stat-rp">0 RP</div></div>
+      <div class="stat"><div class="label">RP</div><div class="value" id="stat-rp">0</div></div>
       <div class="stat"><div class="label">Share</div><div class="value" id="stat-share">2.0%</div></div>
-      <div class="stat"><div class="label">Engineers</div><div class="value" id="stat-team">0</div></div>
+      <div class="stat"><div class="label">Team</div><div class="value" id="stat-team">1</div></div>
     </div>
+
     <div class="cash-display">
       <div class="cash-value" id="stat-money">$5.00K</div>
       <div class="cash-label">Cash on hand</div>
     </div>
+
     <div class="device-status">
       <div class="dev-clock" id="dev-clock">--:--</div>
-      <div class="dev-battery" id="dev-battery"><div class="bat-shape"><div class="bat-fill" id="dev-bat-fill" style="width:100%"></div></div></div>
+      <div class="dev-battery" id="dev-battery">
+        <div class="bat-shape"><div class="bat-fill" id="dev-bat-fill" style="width:100%"></div></div>
+      </div>
     </div>
+
     <div class="topbar-actions">
-      <button class="profile-btn" id="btn-profile" title="Profile & Settings">
+      <button class="icon-btn" id="btn-bell" title="News">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <span class="bell-badge" id="bell-badge" style="display:none">0</span>
+      </button>
+
+      <button class="profile-btn" id="btn-profile" title="Profile">
         <div class="profile-avatar" id="profile-avatar">F</div>
         <svg class="profile-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><path d="m6 9 6 6 6-6"/></svg>
       </button>
@@ -142,7 +156,6 @@
     </aside>
   </main>
 
-  <!-- BOTTOM NAV (5 tabs, duotone) -->
   <nav id="nav">
     <button class="nav-btn active" data-panel="dashboard">
       <div class="nav-icon">
@@ -183,6 +196,14 @@
       </div>
       <span>Research</span>
     </button>
+
+    <button class="nav-btn" data-panel="market">
+      <div class="nav-icon">
+        <svg class="nav-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20h17"/><path d="M6 20V10.5M10.5 20V6M15 20V13M19.5 20V8"/></svg>
+        <svg class="nav-fill" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="10" width="3" height="10" rx="1"/><rect x="9.5" y="5" width="3" height="15" rx="1"/><rect x="14" y="12.5" width="3" height="7.5" rx="1"/><rect x="18.5" y="7.5" width="3" height="12.5" rx="1"/></svg>
+      </div>
+      <span>Market</span>
+    </button>
   </nav>
 
   <footer id="bottombar">
@@ -200,12 +221,28 @@
     </div>
   </footer>
 
+  <!-- PROFILE -->
   <div id="profile-modal"></div>
+
+  <!-- NEWS DRAWER -->
   <div id="news-drawer" class="news-drawer">
     <div class="news-drawer-head"><h3>News Feed</h3><button class="news-drawer-close" id="news-drawer-close">✕</button></div>
     <div class="news-drawer-body" id="news-drawer-body"></div>
   </div>
   <div id="news-backdrop" class="news-backdrop"></div>
+
+  <!-- NOTIFICATION DRAWER (headlines) -->
+  <div id="notif-drawer" class="notif-drawer">
+    <div class="notif-drawer-head">
+      <div>
+        <div class="notif-drawer-eyebrow">Tech headlines</div>
+        <h3>World news</h3>
+      </div>
+      <button class="notif-drawer-close" id="notif-drawer-close">✕</button>
+    </div>
+    <div class="notif-drawer-body" id="notif-drawer-body"></div>
+  </div>
+  <div id="notif-backdrop" class="notif-backdrop"></div>
 
   <div id="toast-wrap"></div>
   <div id="modal-wrap"></div>
@@ -215,15 +252,34 @@
   (function () {
     var V = window.__FC_VERSION__ || Date.now();
     var scripts = [
-      'js/data/tech.js','js/data/isa.js','js/data/engineers.js','js/data/segments.js',
-      'js/data/competitors.js','js/data/events.js','js/data/archetypes.js','js/data/difficulties.js',
+      'js/data/tech.js',
+      'js/data/isa.js',
+      'js/data/engineers.js',
+      'js/data/segments.js',
+      'js/data/competitors.js',
+      'js/data/events.js',
+      'js/data/archetypes.js',
+      'js/data/difficulties.js',
       'js/data/designer-config.js',
-      'js/systems/chipDesign.js','js/systems/production.js','js/systems/team.js',
-      'js/systems/research.js','js/systems/market.js','js/systems/finance.js',
+      'js/data/headlines.js',
+      'js/systems/chipDesign.js',
+      'js/systems/production.js',
+      'js/systems/team.js',
+      'js/systems/research.js',
+      'js/systems/market.js',
+      'js/systems/finance.js',
       'js/state.js',
-      'js/ui/layout.js','js/ui/systemStatus.js','js/ui/panelDashboard.js','js/ui/panelDesign.js',
-      'js/ui/panelProduction.js','js/ui/panelTeam.js','js/ui/panelResearch.js',
-      'js/ui/panelMarket.js','js/ui/panelFinance.js','js/ui/menu.js',
+      'js/ui/layout.js',
+      'js/ui/systemStatus.js',
+      'js/ui/notifications.js',
+      'js/ui/panelDashboard.js',
+      'js/ui/panelDesign.js',
+      'js/ui/panelProduction.js',
+      'js/ui/panelTeam.js',
+      'js/ui/panelResearch.js',
+      'js/ui/panelMarket.js',
+      'js/ui/panelFinance.js',
+      'js/ui/menu.js',
       'js/ui/designer.js',
       'js/ui/profile.js',
       'js/main.js'
