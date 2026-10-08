@@ -4,7 +4,7 @@
 let dsWizard = null;
 
 // =========================================================
-// ENTRY — category chooser
+// ENTRY — category chooser (tile grid)
 // =========================================================
 function openDesignerCategoryChooser() {
   if (!state) return;
@@ -17,30 +17,46 @@ function openDesignerCategoryChooser() {
   const wrap = document.getElementById('modal-wrap');
   if (!wrap) return;
 
-  const cats = [
-    { id: 'cpu',        label: 'CPU',          icon: 'cpu',    color: '#c9542a' },
-    { id: 'gpu',        label: 'GPU',          icon: 'gpu',    color: '#7a5ba8' },
-    { id: 'laptop',     label: 'Laptop',       icon: 'laptop', color: '#b8852b' },
-    { id: 'os',         label: 'Operating System', icon: 'os', color: '#3d8b5f' },
-    { id: 'smartphone', label: 'Smartphone',   icon: 'phone',  color: '#c47a2e' },
+  const groups = [
+    {
+      title: 'Silicon',
+      items: [
+        { id: 'cpu', label: 'CPU', icon: 'cpu', color: '#c9542a' },
+        { id: 'gpu', label: 'GPU', icon: 'gpu', color: '#7a5ba8' },
+      ],
+    },
+    {
+      title: 'Systems',
+      items: [
+        { id: 'laptop',     label: 'Laptop',     icon: 'laptop', color: '#b8852b' },
+        { id: 'os',         label: 'OS',         icon: 'os',     color: '#3d8b5f' },
+        { id: 'smartphone', label: 'Smartphone', icon: 'phone',  color: '#c47a2e' },
+      ],
+    },
   ];
 
   wrap.innerHTML = `
-    <div class="modal ds-modal">
+    <div class="modal ds-modal ds-modal-tiles">
       <div class="modal-head">
         <h3>Create</h3>
-        <button class="btn sm" data-ds-close>✕</button>
+        <button class="btn sm" data-ds-close aria-label="Close">✕</button>
       </div>
       <div class="modal-body">
-        <p class="muted mb-2" style="font-size:13px">Choose a product to design.</p>
-        <div class="ds-cat-grid">
-          ${cats.map(c => `
-            <button class="ds-cat-tile" data-ds-cat="${c.id}" style="--tile-color:${c.color}">
-              <div class="ds-cat-icon">${svgIconFor(c.icon, c.color)}</div>
-              <div class="ds-cat-label">${c.label}</div>
-            </button>
-          `).join('')}
-        </div>
+        <p class="ds-modal-subtitle">Choose a product to design.</p>
+
+        ${groups.map(g => `
+          <div class="ds-tile-section">
+            <div class="ds-tile-section-title">${g.title}</div>
+            <div class="ds-tile-row">
+              ${g.items.map(it => `
+                <button class="ds-tile" data-ds-cat="${it.id}" style="--tile-color:${it.color}">
+                  <div class="ds-tile-icon">${svgIconFor(it.icon, it.color)}</div>
+                  <div class="ds-tile-label">${it.label}</div>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        `).join('')}
       </div>
     </div>
   `;
@@ -75,7 +91,6 @@ function buildEmptyDraft(catId) {
     node: state.currentNode,
     price: 100,
     budget: 100,
-    // CPU/GPU
     isa: 'x86',
     cores: 1,
     baseClock: 200,
@@ -88,16 +103,13 @@ function buildEmptyDraft(catId) {
     rops: 4,
     memoryType: 'sdram',
     memoryGB: 4,
-    // Laptop
     chassis: 'mainstream',
     cpuBrand: 'In-house',
     screenSize: 14,
     batteryWh: 40,
     useOwnCpu: true,
-    // OS
     kernel: 'unix',
     features: ['gui', 'network'],
-    // Phone
     body: 'glass',
     phoneScreen: 5.5,
     phoneBattery: 3000,
@@ -231,7 +243,7 @@ function closeDesigner() {
 }
 
 // =========================================================
-// COMMIT — push to production
+// COMMIT
 // =========================================================
 function commitWizard() {
   const { cat, draft } = dsWizard;
@@ -810,7 +822,6 @@ function bindDesignerStep() {
   document.querySelectorAll('[data-ds-owncpu]').forEach(b => b.addEventListener('click', () => { d.useOwnCpu = b.dataset.dsOwncpu === '1'; renderDesignerShell(); }));
   document.querySelectorAll('[data-ds-ownchip]').forEach(b => b.addEventListener('click', () => { d.useOwnChip = b.dataset.dsOwnchip === '1'; renderDesignerShell(); }));
 
-  // Sliders
   const live = (id, key, fmt) => {
     $(id)?.addEventListener('input', e => {
       d[key] = (parseFloat(e.target.value));
@@ -979,4 +990,4 @@ function svgIconFor(name, color) {
     phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
   };
   return (map[name] || map.cpu).replace('<svg ', `<svg style="color:${color}" `);
-    }
+}
