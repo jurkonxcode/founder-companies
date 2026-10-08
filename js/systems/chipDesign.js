@@ -1,17 +1,15 @@
 // js/systems/chipDesign.js
-// Rumus desain chip: performa, TDP, yield, biaya produksi.
-// Bergantung pada: tech.js, isa.js, segments.js
+// Chip design math: performance, TDP, yield, cost.
+// Depends on: tech.js, isa.js, segments.js, archetypes.js
 
-// Kategori produk yang bisa dirancang
 const CHIP_CATEGORIES = [
-  { id: 'cpu',        name: 'CPU',         icon: 'cpu',    isaRequired: true  },
-  { id: 'gpu',        name: 'GPU',         icon: 'gpu',    isaRequired: false },
-  { id: 'os',         name: 'Sistem Operasi', icon: 'os', isaRequired: false },
-  { id: 'laptop',     name: 'Laptop',      icon: 'laptop', isaRequired: true  },
-  { id: 'smartphone', name: 'Smartphone',  icon: 'phone',  isaRequired: true  },
+  { id: 'cpu',        name: 'CPU',             icon: 'cpu',    isaRequired: true  },
+  { id: 'gpu',        name: 'GPU',             icon: 'gpu',    isaRequired: false },
+  { id: 'os',         name: 'Operating System',icon: 'os',     isaRequired: false },
+  { id: 'laptop',     name: 'Laptop',          icon: 'laptop', isaRequired: true  },
+  { id: 'smartphone', name: 'Smartphone',      icon: 'phone',  isaRequired: true  },
 ];
 
-// SIMD extensions dengan tahun rilis asli
 const SIMD_SETS = [
   { id: 'mmx',    name: 'MMX',     year: 1997, featureScore: 5  },
   { id: 'sse',    name: 'SSE',     year: 1999, featureScore: 8  },
@@ -28,7 +26,7 @@ function getAvailableSIMD(year) {
   return SIMD_SETS.filter(s => s.year <= year);
 }
 
-// ===== Buat draft kosong =====
+// ===== Create empty draft =====
 function createDraft(year) {
   const techs = getTechsUpToYear(year);
   const latest = techs[techs.length - 1];
@@ -45,28 +43,28 @@ function createDraft(year) {
     node: latest ? latest.id : '350nm',
     simd: [],
     segment: 'budget_pc',
-    budget: 100000,
-    price: 100,
+    budget: 100,
+    price: 20,
   };
 }
 
-// ===== Batas maksimum desain berdasarkan node =====
+// ===== Design limits based on process node =====
 function getDesignLimits(nodeId) {
   const tech = getTech(nodeId);
   if (!tech) return null;
   const yearFactor = (tech.year - 1995) / 30;
   return {
     maxCores: 1 + Math.floor(yearFactor * 32),
-    maxClock: tech.maxClock,
-    maxCacheL1: Math.round(32 + yearFactor * 96),      // KB
-    maxCacheL2: Math.round(512 + yearFactor * 32768),  // KB
-    maxCacheL3: Math.round(yearFactor * 65536),        // KB
+    maxClock: Math.round(tech.maxClock * archBonus('clockMax')),
+    maxCacheL1: Math.round(32 + yearFactor * 96),
+    maxCacheL2: Math.round(512 + yearFactor * 32768),
+    maxCacheL3: Math.round(yearFactor * 65536),
   };
 }
 
-// ===== Hitung transistor (juta) =====
+// ===== Transistor count (millions) =====
 function calcTransistors(draft, tech) {
-  const coreTrans = draft.cores * 5; // 5 juta per core dasar
+  const coreTrans = draft.cores * 5;
   const cacheTrans = (draft.cacheL1 * draft.cores + draft.cacheL2 + draft.cacheL3) / 1000;
   const simdTrans = draft.simd.length * 1.5;
   const clockFactor = 1 + (draft.boostClock / tech.maxClock) * 0.4;
@@ -74,101 +72,89 @@ function calcTransistors(draft, tech) {
   return Math.round(total * 10) / 10;
 }
 
-// ===== Hitung die area (mm²) =====
+// ===== Die area (mm²) =====
 function calcDieArea(draft, tech) {
   const transistors = calcTransistors(draft, tech);
   const area = transistors / tech.transistorDensity;
   return Math.round(area * 10) / 10;
 }
 
-// ===== Hitung TDP (watt) =====
+// ===== TDP (watts) =====
 function calcTDP(draft, tech, teamBonus = {}) {
   const baseTDP = draft.cores * 12 + (draft.boostClock / 100) * 3;
   const nodeFactor = tech.tdpFactor;
   const thermalBonus = 1 - Math.min(0.5, teamBonus.thermal || 0);
-  return Math.max(3, Math.round(baseTDP * nodeFactor * thermalBonus));
+  const tdpMult = (draft.category === 'mobile' || draft.category === 'smartphone')
+    ? archBonus('tdpMobile') : 1;
+  return Math.max(3, Math.round(baseTDP * nodeFactor * thermalBonus * tdpMult));
 }
 
-// ===== Hitung performa (skor) =====
+// ===== Performance score =====
 function calcPerfScore(draft, tech, teamBonus = {}) {
   const yearFactor = Math.max(0, (tech.year - 1995) / 30);
 
-  // Ekspektasi pada node ini
   const expectedCores = 1 + yearFactor * 8;
   const expectedClock = tech.maxClock * 0.65;
-  const expectedCache = 32 + yearFactor * 4096; // KB total
+  const expectedCache = 32 + yearFactor * 4096;
 
-  // Skor per dimensi (rasio terhadap ekspektasi, cap 2.0)
   const coreScore = Math.min(2.0, draft.cores / expectedCores);
   const clockScore = Math.min(1.5, draft.boostClock / expectedClock);
   const totalCache = draft.cacheL1 * draft.cores + draft.cacheL2 + draft.cacheL3;
   const cacheScore = Math.min(2.0, Math.max(0.3, totalCache / expectedCache));
 
-  // Bonus ISA
   const isa = getISA(draft.isa);
   const isaMult = isa ? isa.perfBonus : 1.0;
-
-  // Bonus SIMD
   const simdMult = 1 + draft.simd.length * 0.04;
-
-  // Bonus tim engineer
   const microBonus = 1 + (teamBonus.perf || 0);
 
-  // Quality factor (rata-rata geometrik)
   const quality = Math.pow(coreScore * clockScore * cacheScore, 1/3)
                 * isaMult * simdMult * microBonus;
 
-  return Math.round(tech.refPerf * quality);
+  const basePerf = tech.refPerf * quality;
+  return Math.round(basePerf * archPerfMult(draft.category));
 }
 
-// ===== Hitung yield (0-1) =====
+// ===== Yield (0-1) =====
 function calcYield(draft, tech, teamBonus = {}) {
   const dieArea = calcDieArea(draft, tech);
-  // Semakin besar die, semakin rendah yield (efek defect density)
   const areaPenalty = Math.pow(Math.max(0.2, 1 - dieArea / 400), 0.5);
   const teamYield = teamBonus.yield || 0;
-
   const y = tech.baseYield * areaPenalty + teamYield;
   return Math.max(0.15, Math.min(0.95, y));
 }
 
-// ===== Hitung feature score (0-100) =====
+// ===== Feature score (0-100) =====
 function calcFeatureScore(draft, tech) {
   let score = 0;
   for (const s of draft.simd) {
     const simd = SIMD_SETS.find(x => x.id === s);
     if (simd) score += simd.featureScore;
   }
-  // Cache besar = fitur
   const totalCacheMB = (draft.cacheL1 * draft.cores + draft.cacheL2 + draft.cacheL3) / 1024;
   score += Math.min(30, totalCacheMB * 2);
   return Math.min(100, Math.round(score));
 }
 
-// ===== Hitung biaya desain minimum =====
+// ===== Minimum design cost (rebalanced for $5k start) =====
 function calcMinDesignCost(draft, tech) {
   const transistors = calcTransistors(draft, tech);
-  const base = tech.cost * 0.4;       // basis dari harga node
-  const complexity = transistors * 20000; // tiap juta transistor butuh $20K
-  return Math.round(base + complexity + 50000);
+  const base = 100;
+  const complexity = transistors * 40;
+  const nodeFee = tech.cost * 0.05;
+  return Math.round((base + complexity + nodeFee) * archBonus('designCost'));
 }
 
-// ===== Hitung biaya produksi per unit =====
+// ===== Unit production cost per chip =====
 function calcUnitCost(draft, tech, yieldRate) {
-  // Ukuran die menentukan berapa chip per wafer
   const dieArea = calcDieArea(draft, tech);
-  const waferArea = 30000; // mm² (300mm wafer)
-  const chipsPerWafer = Math.max(1, Math.floor(waferArea / dieArea * 0.85)); // 85% utilisation
+  const waferArea = 30000;
+  const chipsPerWafer = Math.max(1, Math.floor(waferArea / dieArea * 0.85));
   const costPerGoodChip = tech.waferCost / (chipsPerWafer * yieldRate);
-
-  // Packaging & testing overhead
-  const packaging = 15 + Math.log2(1 + draft.cores) * 5;
-
-  return Math.round(costPerGoodChip + packaging);
+  const packaging = 1 + Math.log2(1 + draft.cores) * 0.5;
+  return Math.round((costPerGoodChip + packaging) * 10) / 10;
 }
 
-// ===== Hitung skor komposit akhir =====
-// Mengembalikan objek lengkap yang siap masuk production pipeline
+// ===== Finalize chip design =====
 function finalizeChip(draft, year, teamBonus = {}) {
   const tech = getTech(draft.node);
   if (!tech) return null;
@@ -196,16 +182,15 @@ function finalizeChip(draft, year, teamBonus = {}) {
   };
 }
 
-// ===== Skor tim dari engineer =====
-// Mengumpulkan bonus dari semua engineer yang ditugaskan ke proyek
+// ===== Team bonus from engineers =====
 function calcTeamBonus(engineers) {
   const bonus = { perf: 0, thermal: 0, yield: 0, clock: 0, cache: 0, io: 0, process: 0, feature: 0 };
   for (const eng of engineers) {
     const level = getLevelInfo(eng.level);
-    const effect = level.effectMult * 0.05; // maksimal ~17% untuk SS
+    const effect = level.effectMult * 0.05;
     const spec = SPECIALTIES[eng.specialty];
     if (!spec) continue;
     bonus[spec.effect] = (bonus[spec.effect] || 0) + effect;
   }
   return bonus;
-    }
+                        }
