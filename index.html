@@ -8,7 +8,22 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>Founder Companies</title>
-<link rel="stylesheet" href="style.css" />
+
+<!-- =========================================================
+     AUTO CACHE-BUST
+     Setiap reload, versi berubah otomatis = selalu ambil fresh.
+     Untuk "freeze" cache, ubah baris __V__ menjadi:
+         var __V__ = 'v1';
+     lalu ganti angka setiap kali kamu update file.
+     ========================================================= -->
+<script>
+  (function () {
+    var __V__ = Date.now();                 // <-- auto cache-bust
+    // var __V__ = 'v1';                    // <-- uncomment untuk freeze
+    window.__FC_VERSION__ = __V__;
+    document.write('<link rel="stylesheet" href="style.css?v=' + __V__ + '">');
+  })();
+</script>
 </head>
 <body>
 
@@ -115,7 +130,7 @@
     </div>
   </div>
 
-  <!-- ===== SCREEN 2: MODE ===== -->
+  <!-- ===== SCREEN 2: MODE (kept for compatibility; unused in Option A) ===== -->
   <div class="menu-screen" data-screen="mode">
     <div class="menu-back-head">
       <button class="back-btn" data-back="main">
@@ -132,7 +147,7 @@
       <div class="mode-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></div>
       <div class="mode-tag">Original Companies</div>
       <div class="mode-title">Standard</div>
-      <div class="mode-desc">Play as Founder Semiconductor with balanced advantages against eight historical AI rivals. The recommended experience for a first run.</div>
+      <div class="mode-desc">Play as Founder Semiconductor with balanced advantages against eight historical AI rivals.</div>
       <span class="mode-cta">Choose Standard <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></span>
     </div>
 
@@ -140,7 +155,7 @@
       <div class="mode-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h10M18 18h2"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="18" r="2"/></svg></div>
       <div class="mode-tag">Custom Company Field</div>
       <div class="mode-title">Freeplay</div>
-      <div class="mode-desc">Pick from eight archetypes with unique identities and bonuses, set your starting cash, and begin from any year you like.</div>
+      <div class="mode-desc">Pick from eight archetypes with unique identities and bonuses.</div>
       <span class="mode-cta">Open Freeplay <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></span>
     </div>
   </div>
@@ -289,32 +304,51 @@
   <div id="modal-wrap"></div>
 </div>
 
-<!-- ============ SCRIPTS ============ -->
-<script src="js/data/tech.js"></script>
-<script src="js/data/isa.js"></script>
-<script src="js/data/engineers.js"></script>
-<script src="js/data/segments.js"></script>
-<script src="js/data/competitors.js"></script>
-<script src="js/data/events.js"></script>
-<script src="js/data/archetypes.js"></script>
-<script src="js/data/difficulties.js"></script>
-<script src="js/systems/chipDesign.js"></script>
-<script src="js/systems/production.js"></script>
-<script src="js/systems/team.js"></script>
-<script src="js/systems/research.js"></script>
-<script src="js/systems/market.js"></script>
-<script src="js/systems/finance.js"></script>
-<script src="js/state.js"></script>
-<script src="js/ui/layout.js"></script>
-<script src="js/ui/systemStatus.js"></script>
-<script src="js/ui/panelDashboard.js"></script>
-<script src="js/ui/panelDesign.js"></script>
-<script src="js/ui/panelProduction.js"></script>
-<script src="js/ui/panelTeam.js"></script>
-<script src="js/ui/panelResearch.js"></script>
-<script src="js/ui/panelMarket.js"></script>
-<script src="js/ui/panelFinance.js"></script>
-<script src="js/ui/menu.js"></script>
-<script src="js/main.js"></script>
+<!-- =========================================================
+     SCRIPTS — auto cache-busted
+     Tambah file baru = cukup tambah ke array di bawah.
+     ========================================================= -->
+<script>
+  (function () {
+    var V = window.__FC_VERSION__ || Date.now();
+    var scripts = [
+      // data
+      'js/data/tech.js',
+      'js/data/isa.js',
+      'js/data/engineers.js',
+      'js/data/segments.js',
+      'js/data/competitors.js',
+      'js/data/events.js',
+      'js/data/archetypes.js',
+      'js/data/difficulties.js',
+      // systems
+      'js/systems/chipDesign.js',
+      'js/systems/production.js',
+      'js/systems/team.js',
+      'js/systems/research.js',
+      'js/systems/market.js',
+      'js/systems/finance.js',
+      // state
+      'js/state.js',
+      // ui
+      'js/ui/layout.js',
+      'js/ui/systemStatus.js',
+      'js/ui/panelDashboard.js',
+      'js/ui/panelDesign.js',
+      'js/ui/panelProduction.js',
+      'js/ui/panelTeam.js',
+      'js/ui/panelResearch.js',
+      'js/ui/panelMarket.js',
+      'js/ui/panelFinance.js',
+      'js/ui/menu.js',
+      // main
+      'js/main.js'
+    ];
+
+    for (var i = 0; i < scripts.length; i++) {
+      document.write('<script src="' + scripts[i] + '?v=' + V + '"><\/script>');
+    }
+  })();
+</script>
 </body>
 </html>
