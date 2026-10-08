@@ -14,15 +14,13 @@ function setSpeed(rate) {
     if (rate > 0) state._lastSpeed = rate;
   }
 
-  // Update UI
   document.querySelectorAll('[data-speed]').forEach(b => {
     const bRate = parseInt(b.dataset.speed);
     b.classList.toggle('active', bRate === rate);
   });
 
-  // Start auto-advance
   if (rate > 0) {
-    const interval = 3000 / rate; // 1× = 3s, 2× = 1.5s, 4× = 0.75s
+    const interval = 3000 / rate;
     _turnTimer = setInterval(() => {
       if (!state || state.gameOver) { setSpeed(0); return; }
       nextTurn(true);
@@ -34,18 +32,13 @@ function setSpeed(rate) {
 
 function togglePause() {
   if (!state) return;
-  if (state.speed > 0) {
-    setSpeed(0);
-  } else {
-    setSpeed(state._lastSpeed || 1);
-  }
+  if (state.speed > 0) setSpeed(0);
+  else setSpeed(state._lastSpeed || 1);
 }
 
 function bindSpeedControls() {
   document.querySelectorAll('[data-speed]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      setSpeed(parseInt(btn.dataset.speed));
-    });
+    btn.addEventListener('click', () => setSpeed(parseInt(btn.dataset.speed)));
   });
 }
 
@@ -74,7 +67,6 @@ function updateNavBadges() {
 // =========================================================
 function nextTurn(fromAuto = false) {
   if (!state || state.gameOver || state._processing) return;
-
   state._processing = true;
 
   const btn = document.getElementById('btn-next-turn');
@@ -107,7 +99,7 @@ function nextTurn(fromAuto = false) {
     if (result.completed) {
       addLog(`Project "${p.name}" completed. Ready to launch.`, 'good');
       toast(`${p.name} finished design!`, 'good', 'R&D Complete');
-      if (state.speed > 0) setSpeed(0); // pause on milestone
+      if (state.speed > 0) setSpeed(0);
     } else if (result.stageChanged) {
       const stage = PROJECT_STAGES[p.stageIndex];
       addLog(`"${p.name}" entered ${stage.name} stage.`, 'info');
@@ -173,7 +165,7 @@ function nextTurn(fromAuto = false) {
     if (histEv.effects.share) {
       state.marketShare = Math.min(0.75, state.marketShare + histEv.effects.share);
     }
-    if (state.speed > 0) setSpeed(0); // pause on milestone event
+    if (state.speed > 0) setSpeed(0);
   }
 
   // 11. Random event
@@ -208,7 +200,16 @@ function nextTurn(fromAuto = false) {
     return;
   }
 
-  // 15. Turn summary
+  // 15. History
+  if (!state.history) state.history = { cash: [], share: [], revenue: [] };
+  state.history.cash.push(Math.round(state.uang));
+  state.history.share.push(parseFloat(state.marketShare.toFixed(4)));
+  state.history.revenue.push(Math.round(state.totalRevenue));
+  if (state.history.cash.length > 24) state.history.cash.shift();
+  if (state.history.share.length > 24) state.history.share.shift();
+  if (state.history.revenue.length > 24) state.history.revenue.shift();
+
+  // 16. Turn summary
   const net = passive - salary - rdSpend;
   setBottomNote(
     `Cash ${formatMoneyShort(state.uang)} · ${rpGain} RP · ${compEvents.length} rival moves`,
@@ -221,7 +222,7 @@ function nextTurn(fromAuto = false) {
 }
 
 // =========================================================
-// RANDOM EVENT HANDLER
+// RANDOM EVENT
 // =========================================================
 function handleRandomEvent(ev) {
   const logType = ev.type === 'bad' ? 'bad' : 'good';
@@ -273,32 +274,25 @@ function handleRandomEvent(ev) {
 // =========================================================
 function bindGlobalActions() {
   document.getElementById('btn-next-turn')?.addEventListener('click', () => nextTurn(false));
+}
 
-  document.getElementById('btn-save')?.addEventListener('click', () => {
-    if (saveGame()) toast('Game saved.', 'good');
+function bindNav() {
+  // Panels with data-panel
+  document.querySelectorAll('.nav-btn[data-panel]').forEach(btn => {
+    btn.addEventListener('click', () => renderPanel(btn.dataset.panel));
   });
 
-  document.getElementById('btn-reset')?.addEventListener('click', () => {
-    openModal({
-      title: 'Reset Game',
-      body: '<p>All progress will be lost. Are you sure?</p>',
-      actions: [
-        { label: 'Cancel' },
-        {
-          label: 'Yes, Reset',
-          type: 'danger',
-          onClick: () => {
-            if (_turnTimer) { clearInterval(_turnTimer); _turnTimer = null; }
-            resetGame();
-            if (typeof designDraft !== 'undefined') designDraft = null;
-            renderPanel('dashboard');
-            renderAll();
-            setSpeed(0);
-          },
-        },
-      ],
+  // Create button — opens designer modal
+  const createBtn = document.getElementById('nav-create');
+  if (createBtn) {
+    createBtn.addEventListener('click', () => {
+      if (typeof openDesignerCategoryChooser === 'function') {
+        openDesignerCategoryChooser();
+      } else {
+        alert('designer.js not loaded. Check script tag in index.html.');
+      }
     });
-  });
+  }
 }
 
 function bindKeyboard() {
@@ -315,7 +309,7 @@ function bindKeyboard() {
       togglePause();
     }
     if (e.key === '1') { if (e.shiftKey) setSpeed(1); else renderPanel('dashboard'); }
-    if (e.key === '2') { if (e.shiftKey) setSpeed(2); else renderPanel('design'); }
+    if (e.key === '2') renderPanel('design');
     if (e.key === '3') renderPanel('production');
     if (e.key === '4') { if (e.shiftKey) setSpeed(4); else renderPanel('team'); }
     if (e.key === '5') renderPanel('research');
@@ -337,12 +331,13 @@ function boot() {
   bindGlobalActions();
   bindKeyboard();
   bindSpeedControls();
+  if (typeof bindProfileButton === 'function') bindProfileButton();
+  if (typeof updateProfileAvatar === 'function') updateProfileAvatar();
   if (typeof initSystemStatus === 'function') initSystemStatus();
   if (typeof bindNewsDrawer === 'function') bindNewsDrawer();
   renderPanel('dashboard');
   renderAll();
 
-  // Restore speed from save (or default to pause)
   const savedSpeed = state.speed || 0;
   setSpeed(savedSpeed);
 
