@@ -1,29 +1,76 @@
 // js/systems/production.js
-// Pipeline produksi 5 tahap. Setiap proyek berjalan melalui tahap-
-// tahap ini selama beberapa turn.
+// Production pipeline — 5 stages with per-category realistic durations.
 
 const PROJECT_STAGES = [
-  { id: 'design',   name: 'Design',        baseTurns: 6, costFactor: 0.45,
-    desc: 'Merancang arsitektur dan layout chip.' },
-  { id: 'test',     name: 'Verification',  baseTurns: 3, costFactor: 0.15,
-    desc: 'Validasi fungsional dan karakterisasi yield.' },
-  { id: 'software', name: 'Software',      baseTurns: 2, costFactor: 0.10,
-    desc: 'Driver, compiler, dan SDK.' },
-  { id: 'fab',      name: 'Fabrication',   baseTurns: 4, costFactor: 0.20,
-    desc: 'Produksi wafer dan packaging.' },
-  { id: 'launch',   name: 'Launch',        baseTurns: 1, costFactor: 0.10,
-    desc: 'Peluncuran resmi ke pasar.' },
+  { id: 'design',   name: 'Design',       costFactor: 0.45,
+    desc: 'Architecture, specification, and design.' },
+  { id: 'verify',   name: 'Verification', costFactor: 0.20,
+    desc: 'Functional validation and yield characterization.' },
+  { id: 'software', name: 'Software',     costFactor: 0.12,
+    desc: 'Drivers, firmware, and SDK.' },
+  { id: 'fab',      name: 'Fabrication',  costFactor: 0.18,
+    desc: 'Manufacturing and packaging.' },
+  { id: 'launch',   name: 'Launch',       costFactor: 0.05,
+    desc: 'Market release and distribution.' },
 ];
+
+// ===== Real-world-inspired durations (in months) =====
+// Base at 1995, scaled up to 2025 as complexity increases.
+const DURATION_BASE = {
+  cpu:        18,   // Pentium (1995): ~14 mo → Modern CPU: ~24 mo
+  gpu:        16,   // Early GPU: ~12 mo → Modern GPU: ~21 mo
+  os:          9,   // Windows 95: ~7 mo → Modern OS: ~12 mo
+  laptop:     12,   // ~9 mo → ~16 mo
+  smartphone: 16,   // 2007 iPhone: ~16 mo → Modern: ~21 mo
+};
+
+// Stage weight distribution per category
+const STAGE_WEIGHTS = {
+  cpu:        [0.45, 0.20, 0.10, 0.20, 0.05],
+  gpu:        [0.45, 0.20, 0.10, 0.20, 0.05],
+  os:         [0.30, 0.20, 0.40, 0.00, 0.10],   // no fab
+  laptop:     [0.30, 0.20, 0.15, 0.25, 0.10],
+  smartphone: [0.30, 0.22, 0.25, 0.13, 0.10],
+};
+
+// ===== Estimate total months for a project =====
+function estimateProjectDuration(category, year) {
+  const yearFactor = Math.max(0, Math.min(1, (year - 1995) / 30));
+  const base = DURATION_BASE[category] || 12;
+  const scale = 0.75 + yearFactor * 0.55;   // 0.75 in 1995 → 1.30 in 2025
+  return Math.max(3, Math.round(base * scale));
+}
+
+// ===== Get stage durations for a specific category/year =====
+function getStageDurations(category, year) {
+  const total = estimateProjectDuration(category, year);
+  const weights = STAGE_WEIGHTS[category] || STAGE_WEIGHTS.cpu;
+  let allocated = 0;
+  const durations = weights.map((w, i) => {
+    if (i === weights.length - 1) {
+      return Math.max(1, total - allocated);
+    }
+    const turns = Math.max(1, Math.round(total * w));
+    allocated += turns;
+    return turns;
+  });
+  return PROJECT_STAGES.map((stage, i) => ({
+    ...stage,
+    baseTurns: durations[i],
+  }));
+}
 
 function getStage(id) {
   return PROJECT_STAGES.find(s => s.id === id) || null;
 }
 
-// ===== Buat proyek baru dari chip yang sudah difinalisasi =====
+// ===== Create project =====
 function createProject(chip, year, month, assignedEngineers = []) {
+  const stages = getStageDurations(chip.category, year);
+  const totalMonths = stages.reduce((s, st) => s + st.baseTurns, 0);
+
   return {
     id: 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-    // Spesifikasi
     name: chip.name,
     category: chip.category,
     isa: chip.isa,
@@ -38,7 +85,6 @@ function createProject(chip, year, month, assignedEngineers = []) {
     segment: chip.segment,
     price: chip.price,
 
-    // Statistik
     perfScore: chip.perfScore,
     tdp: chip.tdp,
     yieldRate: chip.yieldRate,
@@ -48,59 +94,58 @@ function createProject(chip, year, month, assignedEngineers = []) {
     unitCost: chip.unitCost,
 
     // Pipeline
+    stages,
     stageIndex: 0,
-    stageProgress: 0,          // 0-100
+    stageProgress: 0,
     engineerIds: assignedEngineers.map(e => e.id),
-    status: 'active',          // active | done | cancelled
+    status: 'active',
 
-    // Biaya R&D total (di-commit di awal)
+    // Budget
     designBudget: chip.minDesignCost,
     spent: 0,
 
-    // Timestamp
+    // Duration tracking
+    totalMonths,
+    elapsedMonths: 0,
+    startTurn: state ? state.turn : 0,
     startYear: year,
     startMonth: month,
 
-    // Hasil setelah launch
+    // Results
     launchYear: null,
     launchMonth: null,
+    launchTurn: null,
     sales: 0,
     revenue: 0,
   };
 }
 
-// ===== Hitung kecepatan progres per turn =====
-// Default: 100% progress terselesaikan dalam baseTurns turn.
-// Engineer mempercepat.
+// ===== Stage speed calc =====
 function calcStageSpeed(project, engineers) {
-  const stage = PROJECT_STAGES[project.stageIndex];
+  const stages = project.stages || PROJECT_STAGES;
+  const stage = stages[project.stageIndex];
   if (!stage) return 100;
 
-  // Progres dasar per turn
   const baseProgress = 100 / stage.baseTurns;
-
-  // Bonus engineer: setiap engineer menambah hingga +15%
   let speedMult = 1.0;
   for (const eng of engineers) {
-    const level = getLevelInfo(eng.level);
+    const level = (typeof getLevelInfo === 'function') ? getLevelInfo(eng.level) : { effectMult: 1 };
     speedMult += level.effectMult * 0.05;
   }
-
   return baseProgress * speedMult;
 }
 
-// ===== Majukan proyek satu turn =====
-// Mengembalikan objek { stageChanged: bool, completed: bool, cost: number }
+// ===== Advance one turn =====
 function advanceProject(project, engineers, rng = Math.random) {
-  const stage = PROJECT_STAGES[project.stageIndex];
+  const stages = project.stages || PROJECT_STAGES;
+  const stage = stages[project.stageIndex];
   if (!stage) return { stageChanged: false, completed: false, cost: 0 };
 
   const speed = calcStageSpeed(project, engineers);
   project.stageProgress += speed;
+  project.elapsedMonths = (project.elapsedMonths || 0) + 1;
 
-  // Biaya tahap ini (per turn)
   const stageCost = project.designBudget * stage.costFactor / stage.baseTurns;
-  // Variasi acak ±15%
   const cost = Math.round(stageCost * (0.85 + rng() * 0.3));
   project.spent += cost;
 
@@ -112,9 +157,9 @@ function advanceProject(project, engineers, rng = Math.random) {
     project.stageIndex += 1;
     stageChanged = true;
 
-    if (project.stageIndex >= PROJECT_STAGES.length) {
+    if (project.stageIndex >= stages.length) {
       project.status = 'done';
-      project.stageIndex = PROJECT_STAGES.length - 1; // clamp
+      project.stageIndex = stages.length - 1;
       project.stageProgress = 100;
       completed = true;
     }
@@ -123,10 +168,11 @@ function advanceProject(project, engineers, rng = Math.random) {
   return { stageChanged, completed, cost };
 }
 
-// ===== Persentase progres keseluruhan =====
+// ===== Overall progress =====
 function calcOverallProgress(project) {
+  const stages = project.stages || PROJECT_STAGES;
   let total = 0;
-  const n = PROJECT_STAGES.length;
+  const n = stages.length;
   for (let i = 0; i < n; i++) {
     if (i < project.stageIndex) total += 100;
     else if (i === project.stageIndex) total += project.stageProgress;
@@ -134,18 +180,16 @@ function calcOverallProgress(project) {
   return Math.round(total / n);
 }
 
-// ===== Estimasi sisa turn =====
+// ===== Estimate remaining turns =====
 function estimateRemainingTurns(project, engineers) {
   if (project.status !== 'active') return 0;
+  const stages = project.stages || PROJECT_STAGES;
   let turns = 0;
   let stageIdx = project.stageIndex;
   let progress = project.stageProgress;
 
-  while (stageIdx < PROJECT_STAGES.length) {
-    const speed = calcStageSpeed(
-      { ...project, stageIndex: stageIdx },
-      engineers
-    );
+  while (stageIdx < stages.length) {
+    const speed = calcStageSpeed({ ...project, stageIndex: stageIdx }, engineers);
     const needed = 100 - progress;
     turns += Math.ceil(needed / speed);
     stageIdx += 1;
@@ -154,10 +198,9 @@ function estimateRemainingTurns(project, engineers) {
   return turns;
 }
 
-// ===== Ganti prioritas / batalkan =====
+// ===== Cancel =====
 function cancelProject(project) {
   project.status = 'cancelled';
-  // Refund sebagian (30% dari sisa budget)
   const refund = Math.round((project.designBudget - project.spent) * 0.3);
   return Math.max(0, refund);
 }
