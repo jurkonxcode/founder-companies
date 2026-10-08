@@ -56,7 +56,6 @@ function updateNavBadges() {
   const ready = state.projects.filter(p => p.status === 'done').length;
   setNavBadge('production', ready > 0);
   const candidates = state.pool.length;
-  // If team is empty (only founder) and candidates exist, we could badge production hub
   const needTeam = state.team.filter(e => !e.isFounder).length === 0 && candidates > 0;
   if (needTeam) setNavBadge('production', true);
 }
@@ -100,13 +99,31 @@ function nextTurn(fromAuto = false) {
     const result = advanceProject(p, assigned);
     rdSpend += result.cost;
 
+    const stages = p.stages || PROJECT_STAGES;
+
     if (result.completed) {
       addLog(`Project "${p.name}" completed. Ready to launch.`, 'good');
-      toast(`${p.name} finished design!`, 'good', 'R&D Complete');
+      toast(`${p.name} is ready to launch!`, 'good', '✅ R&D Complete');
+      if (typeof pushNotification === 'function') {
+        pushNotification({
+          cat: 'rnd',
+          title: `R&D complete: ${p.name}`,
+          desc: 'Ready to launch from Production tab.',
+          isActivity: true,
+        });
+      }
       if (state.speed > 0) setSpeed(0);
     } else if (result.stageChanged) {
-      const stage = PROJECT_STAGES[p.stageIndex];
+      const stage = stages[p.stageIndex];
       addLog(`"${p.name}" entered ${stage.name} stage.`, 'info');
+      if (typeof pushNotification === 'function') {
+        pushNotification({
+          cat: 'rnd',
+          title: `${p.name} → ${stage.name}`,
+          desc: `Stage ${p.stageIndex + 1} of ${stages.length} · ${p.elapsedMonths || 0}/${p.totalMonths || 0} months elapsed.`,
+          isActivity: true,
+        });
+      }
     }
   }
   state.uang -= rdSpend;
@@ -139,6 +156,22 @@ function nextTurn(fromAuto = false) {
   if (passive > 0) {
     state.uang += passive;
     state.totalRevenue += passive;
+  }
+
+  // 8b. AUTO-PAUSE SAFETY — stop if cash falls below 3 turns of burn
+  const currentBurn = calcOperatingCost(state).total + rdSpend;
+  const cashFloor = currentBurn * 3;
+  let _autoPausedThisTurn = false;
+
+  if (state.uang > 0 && state.uang < cashFloor && state.speed > 0) {
+    setSpeed(0);
+    _autoPausedThisTurn = true;
+    addLog(`⚠ Low cash (${formatMoneyShort(state.uang)}) — auto-paused. Burn: ${formatMoneyShort(currentBurn)}/turn.`, 'warn');
+    toast(
+      `Cash ${formatMoneyShort(state.uang)} below safety floor. Speed auto-paused.`,
+      'warn',
+      '⚠ Low Cash'
+    );
   }
 
   // 9. Debt payment
@@ -192,6 +225,19 @@ function nextTurn(fromAuto = false) {
 
   // 14. Bankruptcy
   const bk = checkBankruptcy(state);
+
+  // 14b. Near-bankruptcy alert (before hitting zero)
+  if (!bk.bankrupt && state.uang > 0 && state.uang < currentBurn && state.speed > 0) {
+    setSpeed(0);
+    _autoPausedThisTurn = true;
+    addLog(`⚠ CRITICAL: Cash ${formatMoneyShort(state.uang)} — less than 1 turn of burn.`, 'bad');
+    toast(
+      `Cash ${formatMoneyShort(state.uang)}. Less than 1 turn of expenses. Production paused.`,
+      'bad',
+      '🚨 Near Bankruptcy'
+    );
+  }
+
   if (bk.bankrupt) {
     state.gameOver = true;
     addLog('COMPANY BANKRUPT. Game over.', 'bad');
@@ -230,10 +276,12 @@ function nextTurn(fromAuto = false) {
 
   // 16. Turn summary
   const net = passive - salary - rdSpend;
-  setBottomNote(
-    `Cash ${formatMoneyShort(state.uang)} · ${rpGain} RP · ${compEvents.length} rival moves`,
-    net >= 0 ? 'good' : 'busy'
-  );
+  if (!_autoPausedThisTurn) {
+    setBottomNote(
+      `Cash ${formatMoneyShort(state.uang)} · ${rpGain} RP · ${compEvents.length} rival moves`,
+      net >= 0 ? 'good' : 'busy'
+    );
+  }
 
   renderAll();
   if (!fromAuto && btn) btn.disabled = false;
@@ -294,49 +342,34 @@ function handleRandomEvent(ev) {
 // =========================================================
 // PANEL ROUTER
 // =========================================================
-// Panels that still exist as full-view: 'dashboard', 'production'.
-// 'team', 'research' → redirect into Production hub (auto-scroll).
-// 'market' → opens the Market modal.
-// 'design' and 'finance' kept as legacy fallback.
 function renderPanel(name, focus) {
   switch (name) {
     case 'dashboard':
     case 'home':
       if (typeof showDashboard === 'function') showDashboard();
       break;
-
     case 'production':
     case 'factory':
       if (typeof showProduction === 'function') showProduction(focus);
       break;
-
     case 'team':
-      // Redirect to Production hub with scroll focus on team section
       if (typeof showProduction === 'function') showProduction('team');
       break;
-
     case 'research':
-      // Redirect to Production hub with scroll focus on research section
       if (typeof showProduction === 'function') showProduction('research');
       break;
-
     case 'market':
       if (typeof openMarketModal === 'function') openMarketModal();
       break;
-
     case 'design':
       if (typeof showDesign === 'function') showDesign();
       break;
-
     case 'finance':
       if (typeof showFinance === 'function') showFinance();
       break;
-
     default:
       if (typeof showDashboard === 'function') showDashboard();
   }
-
-  // Update active tab in bottom nav (map aliases)
   updateActiveTab(name);
 }
 
@@ -350,28 +383,24 @@ function updateActiveTab(name) {
     research: 'production',
     design: 'design',
     finance: 'production',
-    market: null, // market is a modal, don't clear active tab
+    market: null,
   };
   const target = tabMap[name];
   if (target === null) return;
-
   document.querySelectorAll('.nav-btn').forEach(b => {
     const panel = b.dataset.panel;
     b.classList.toggle('active', panel === target);
   });
 }
 
-// refreshCurrentPanel — re-render whatever is currently displayed
 let _currentPanel = 'dashboard';
 function refreshCurrentPanel() {
-  // Don't re-render if a modal is open, to avoid losing focus
   const marketOpen = document.getElementById('market-modal')?.classList.contains('active');
   const profileOpen = document.getElementById('profile-modal')?.classList.contains('active');
   const designerOpen = document.getElementById('modal-wrap')?.classList.contains('active');
 
   if (marketOpen || profileOpen || designerOpen) return;
 
-  // Re-render current tab
   if (_currentPanel === 'dashboard') {
     if (typeof showDashboard === 'function') showDashboard();
   } else if (_currentPanel === 'production') {
@@ -383,7 +412,6 @@ function refreshCurrentPanel() {
   }
 }
 
-// Track panel when renderPanel is called
 const _origRenderPanel = renderPanel;
 window.renderPanel = function(name, focus) {
   if (name && name !== 'market') _currentPanel = name;
@@ -398,7 +426,6 @@ function bindGlobalActions() {
 }
 
 function bindNav() {
-  // Panels with data-panel (Home, Production)
   document.querySelectorAll('.nav-btn[data-panel]').forEach(btn => {
     btn.addEventListener('click', () => {
       _currentPanel = btn.dataset.panel;
@@ -406,16 +433,14 @@ function bindNav() {
     });
   });
 
-  // Create button → designer modal
   document.getElementById('nav-create')?.addEventListener('click', () => {
     if (typeof openDesignerCategoryChooser === 'function') {
       openDesignerCategoryChooser();
     } else {
-      alert('designer.js not loaded. Check script tag in index.html.');
+      alert('designer.js not loaded.');
     }
   });
 
-  // Market button → market modal
   document.getElementById('nav-market')?.addEventListener('click', () => {
     if (typeof openMarketModal === 'function') {
       openMarketModal();
